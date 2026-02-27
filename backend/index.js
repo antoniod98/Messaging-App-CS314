@@ -1,16 +1,17 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const app = express();
 
-// Middleware
+// middleware
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
+    // allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-    // Allow any localhost origin
+    // allow any localhost origin
     if (origin.startsWith('http://localhost:')) {
       return callback(null, true);
     }
@@ -20,30 +21,37 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // parse cookies for JWT authentication
 
-// MongoDB Connection
+// MongoDB connection
 mongoose.connect(process.env.DATABASE_URI)
 .then(() => console.log('✅ MongoDB Connected'))
 .catch((err) => {
   console.error('❌ MongoDB connection error:', err.message);
   console.log('⚠️  Server will continue running without database connection');
   console.log('💡 Troubleshooting tips:');
-  console.log('   - Check if you are on a network that blocks MongoDB Atlas');
-  console.log('   - Verify your IP is whitelisted in Atlas Network Access');
-  console.log('   - Wait a few minutes for DNS propagation');
+  console.log('   - check if you are on a network that blocks MongoDB Atlas');
+  console.log('   - verify your IP is whitelisted in Atlas Network Access');
+  console.log('   - wait a few minutes for DNS propagation');
 });
 
-// Basic test route
+// import routes
+const authRoutes = require('./routes/auth');
+
+// basic test route
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the MERN Stack API!' });
 });
 
-// Test route for frontend to connect to
+// test route for frontend to connect to
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is working!' });
 });
 
-// Start server
+// API routes
+app.use('/api/auth', authRoutes);
+
+// start server
 const PORT = process.env.PORT || 8747;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
