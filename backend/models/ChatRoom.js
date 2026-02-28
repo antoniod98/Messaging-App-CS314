@@ -37,11 +37,10 @@ chatRoomSchema.index({ creator: 1 }); // fast lookup of rooms created by user
 chatRoomSchema.index({ participants: 1 }); // fast lookup of rooms user belongs to
 
 // pre-save middleware: auto-add creator to participants if not already included
-chatRoomSchema.pre('save', function (next) {
+chatRoomSchema.pre('save', function () {
   if (!this.participants.includes(this.creator)) {
     this.participants.push(this.creator);
   }
-  next();
 });
 
 // instance method to check if user is participant

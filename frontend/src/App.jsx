@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -9,27 +10,29 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          {/* public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+        <SocketProvider>
+          <Routes>
+            {/* public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          {/* protected routes */}
-          <Route
-            path="/chat"
-            element={
-              <ProtectedRoute>
-                <Chat />
-              </ProtectedRoute>
-            }
-          />
+            {/* protected routes */}
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <Chat />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* default route - redirect to login */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+            {/* default route - redirect to login */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
 
-          {/* 404 - redirect to login */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
+            {/* 404 - redirect to login */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </SocketProvider>
       </AuthProvider>
     </Router>
   );
