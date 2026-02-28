@@ -1,6 +1,6 @@
-# MERN Stack Messaging App
+# RELAY - Real-Time Messaging Application
 
-This is a full-stack MERN (MongoDB, Express, React, Node.js) application for CS314.
+RELAY is a full-stack MERN (MongoDB, Express, React, Node.js) instant messaging application for CS314.
 
 ## Project Structure
 

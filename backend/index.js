@@ -1,10 +1,12 @@
 const express = require('express');
+const http = require('http');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const app = express();
+const httpServer = http.createServer(app);
 
 // middleware
 app.use(cors({
@@ -37,6 +39,12 @@ mongoose.connect(process.env.DATABASE_URI)
 
 // import routes
 const authRoutes = require('./routes/auth');
+const roomRoutes = require('./routes/rooms');
+const messageRoutes = require('./routes/messages');
+
+// initialize Socket.IO
+const { initializeSocket } = require('./socket');
+const io = initializeSocket(httpServer);
 
 // basic test route
 app.get('/', (req, res) => {
@@ -50,9 +58,12 @@ app.get('/api/test', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/rooms', roomRoutes);
+app.use('/api/messages', messageRoutes);
 
-// start server
+// start server with Socket.IO support
 const PORT = process.env.PORT || 8747;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Socket.IO initialized and ready for connections`);
 });
