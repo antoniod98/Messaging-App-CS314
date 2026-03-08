@@ -41,6 +41,7 @@ mongoose.connect(process.env.DATABASE_URI)
 const authRoutes = require('./routes/auth');
 const roomRoutes = require('./routes/rooms');
 const messageRoutes = require('./routes/messages');
+const userRoutes = require('./routes/users');
 
 // initialize Socket.IO
 const { initializeSocket } = require('./socket');
@@ -60,6 +61,7 @@ app.get('/api/test', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/users', userRoutes);
 
 // start server with Socket.IO support
 const PORT = process.env.PORT || 8747;

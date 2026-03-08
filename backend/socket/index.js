@@ -2,6 +2,9 @@ const { Server } = require('socket.io');
 const { authenticateSocket } = require('./auth');
 const messageHandlers = require('./messageHandlers');
 
+// store online users - maps userId to socket.id
+const onlineUsers = new Map();
+
 // initialize Socket.IO server with configuration
 function initializeSocket(httpServer) {
   const io = new Server(httpServer, {
@@ -32,12 +35,36 @@ function initializeSocket(httpServer) {
   io.on('connection', (socket) => {
     console.log(`User connected: ${socket.userEmail} (${socket.userId})`);
 
+    // add user to online users map
+    onlineUsers.set(socket.userId.toString(), socket.id);
+
+    // broadcast user online status to all connected clients
+    io.emit('userStatusChange', {
+      userId: socket.userId.toString(),
+      status: 'online',
+    });
+
     // register message event handlers
     messageHandlers(io, socket);
+
+    // handle request for online users list
+    socket.on('getOnlineUsers', () => {
+      const onlineUserIds = Array.from(onlineUsers.keys());
+      socket.emit('onlineUsersList', onlineUserIds);
+    });
 
     // handle disconnection
     socket.on('disconnect', (reason) => {
       console.log(`User disconnected: ${socket.userEmail} - Reason: ${reason}`);
+
+      // remove user from online users map
+      onlineUsers.delete(socket.userId.toString());
+
+      // broadcast user offline status to all connected clients
+      io.emit('userStatusChange', {
+        userId: socket.userId.toString(),
+        status: 'offline',
+      });
     });
 
     // handle connection errors
