@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { ChatRoom, Message } = require('../models');
+const { ChatRoom, Message, User } = require('../models');
 const { authenticate } = require('../middleware/auth');
 
 // POST /api/rooms - create a new chat room (protected route)
@@ -240,6 +240,236 @@ router.delete('/:id', authenticate, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while deleting room',
+    });
+  }
+});
+
+// POST /api/rooms/:id/participants - add participant to room (protected route)
+router.post('/:id/participants', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId: newParticipantId } = req.body;
+    const requesterId = req.user.userId;
+
+    // validation: check required fields
+    if (!newParticipantId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required',
+      });
+    }
+
+    const room = await ChatRoom.findById(id);
+
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat room not found',
+      });
+    }
+
+    // verify requester is a participant
+    if (!room.hasParticipant(requesterId)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You must be a participant to add users',
+      });
+    }
+
+    // check if user already a participant
+    if (room.hasParticipant(newParticipantId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'User is already a participant',
+      });
+    }
+
+    // verify the new participant exists
+    const { User } = require('../models');
+    const newUser = await User.findById(newParticipantId);
+    if (!newUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // add participant (addParticipant method already saves)
+    await room.addParticipant(newParticipantId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Participant added successfully',
+      participant: {
+        id: newUser._id,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        email: newUser.email,
+      },
+    });
+  } catch (error) {
+    console.error('Add participant error:', error);
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error while adding participant',
+    });
+  }
+});
+
+// DELETE /api/rooms/:id/participants/:userId - remove participant (protected route)
+router.delete('/:id/participants/:userId', authenticate, async (req, res) => {
+  try {
+    const { id, userId: participantId } = req.params;
+    const requesterId = req.user.userId;
+
+    const room = await ChatRoom.findById(id);
+
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat room not found',
+      });
+    }
+
+    // only creator can remove participants
+    if (room.creator.toString() !== requesterId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only the room creator can remove participants',
+      });
+    }
+
+    // cannot remove the creator
+    if (room.creator.toString() === participantId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot remove the room creator',
+      });
+    }
+
+    // check if user is a participant
+    if (!room.hasParticipant(participantId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'User is not a participant',
+      });
+    }
+
+    // remove participant (removeParticipant method already saves)
+    await room.removeParticipant(participantId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Participant removed successfully',
+      removedUserId: participantId,
+    });
+  } catch (error) {
+    console.error('Remove participant error:', error);
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error while removing participant',
+    });
+  }
+});
+
+// GET /api/rooms/:roomId/messages - get message history for a chat room (protected route)
+router.get('/:roomId/messages', authenticate, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const userId = req.user.userId;
+
+    // pagination parameters with defaults
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+
+    // validate pagination parameters
+    if (page < 1 || limit < 1 || limit > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pagination parameters (page >= 1, limit 1-100)',
+      });
+    }
+
+    // verify chat room exists
+    const chatRoom = await ChatRoom.findById(roomId);
+    if (!chatRoom) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat room not found',
+      });
+    }
+
+    // verify user is a participant of the chat room
+    if (!chatRoom.hasParticipant(userId)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not a participant of this chat room',
+      });
+    }
+
+    // calculate pagination offset
+    const skip = (page - 1) * limit;
+
+    // get total message count for pagination metadata
+    const totalMessages = await Message.countDocuments({ chatRoom: roomId });
+    const totalPages = Math.ceil(totalMessages / limit);
+
+    // fetch paginated messages sorted by timestamp ascending (oldest first)
+    const messages = await Message.find({ chatRoom: roomId })
+      .sort({ timestamp: 1 }) // chronological order (oldest first)
+      .skip(skip)
+      .limit(limit)
+      .populate('sender', 'firstName lastName email')
+      .lean(); // convert to plain JavaScript objects for better performance
+
+    res.status(200).json({
+      success: true,
+      messages: messages.map((msg) => ({
+        id: msg._id,
+        content: msg.content,
+        sender: msg.sender,
+        chatRoom: msg.chatRoom,
+        timestamp: msg.timestamp,
+      })),
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalMessages: totalMessages,
+        messagesPerPage: limit,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    });
+  } catch (error) {
+    console.error('Get messages error:', error);
+
+    // handle invalid ObjectId format
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid room ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching messages',
     });
   }
 });
