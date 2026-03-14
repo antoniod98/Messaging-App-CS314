@@ -9,6 +9,9 @@ import MessageFeed from '../components/MessageFeed';
 import MessageInput from '../components/MessageInput';
 import RoomInfo from '../components/RoomInfo';
 import CreateRoomModal from '../components/CreateRoomModal';
+import UserSearchModal from '../components/UserSearchModal';
+import TypingIndicator from '../components/TypingIndicator';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 // API base URL from environment variables
 const API_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:8747';
@@ -27,6 +30,9 @@ const Chat = () => {
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [error, setError] = useState(null);
+  const [typingUsers, setTypingUsers] = useState([]);
+  const [isDMModalOpen, setIsDMModalOpen] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   // get current room details
   const activeRoom = rooms.find((room) => room.id === activeRoomId);
@@ -119,6 +125,75 @@ const Chat = () => {
     }
   };
 
+  // create or open direct message with a user
+  const handleCreateDM = async (selectedUser) => {
+    try {
+      setError(null);
+
+      const response = await axios.post(
+        `${API_URL}/api/rooms/dm`,
+        { userId: selectedUser.id },
+        { headers: getAuthHeaders() }
+      );
+
+      if (response.data.success) {
+        const dmRoom = response.data.room;
+
+        // check if DM already exists in rooms list
+        const existingRoom = rooms.find((r) => r.id === dmRoom.id);
+        if (!existingRoom) {
+          setRooms((prevRooms) => [dmRoom, ...prevRooms]);
+        }
+
+        // automatically select the DM
+        setActiveRoomId(dmRoom.id);
+      }
+    } catch (error) {
+      console.error('Error creating DM:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to create direct message';
+      setError(errorMessage);
+      alert(errorMessage);
+    }
+  };
+
+  // invite user to current room
+  const handleInviteUser = async (selectedUser) => {
+    if (!activeRoomId) return;
+
+    try {
+      setError(null);
+
+      const response = await axios.post(
+        `${API_URL}/api/rooms/${activeRoomId}/participants`,
+        { userId: selectedUser.id },
+        { headers: getAuthHeaders() }
+      );
+
+      if (response.data.success) {
+        // update room participants in state
+        setRooms((prevRooms) =>
+          prevRooms.map((room) => {
+            if (room.id === activeRoomId) {
+              return {
+                ...room,
+                participants: [...room.participants, response.data.participant],
+                participantCount: room.participantCount + 1,
+              };
+            }
+            return room;
+          })
+        );
+
+        alert(`${selectedUser.firstName} ${selectedUser.lastName} has been invited to the room!`);
+      }
+    } catch (error) {
+      console.error('Error inviting user:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to invite user';
+      setError(errorMessage);
+      alert(errorMessage);
+    }
+  };
+
   // delete chat room
   const handleDeleteRoom = async () => {
     if (!activeRoom) return;
@@ -180,12 +255,25 @@ const Chat = () => {
     }
   };
 
+  // handle typing event
+  const handleTyping = (isTyping) => {
+    if (!activeRoomId || !socket || !isConnected) return;
+
+    socket.emit('typing', {
+      roomId: activeRoomId,
+      isTyping: isTyping,
+    });
+  };
+
   // send message
   const handleSendMessage = (content) => {
     if (!activeRoomId || !socket || !isConnected) {
       alert('Cannot send message: not connected');
       return;
     }
+
+    // stop typing indicator when message is sent
+    handleTyping(false);
 
     // emit message via Socket.IO for real-time delivery
     socket.emit('sendMessage', {
@@ -245,10 +333,44 @@ const Chat = () => {
       setError(error.message);
     };
 
+    // handle user typing indicator
+    const handleUserTyping = (data) => {
+      const { userId, isTyping } = data;
+
+      // only show typing for active room
+      if (data.roomId !== activeRoomId) return;
+
+      setTypingUsers((prev) => {
+        if (isTyping) {
+          // add user to typing list if not already there
+          const existingUser = prev.find((u) => u.id === userId);
+          if (existingUser) return prev;
+
+          // fetch user details from room participants
+          const participant = activeRoom?.participants.find((p) => p.id === userId);
+          if (participant) {
+            return [...prev, participant];
+          }
+          return prev;
+        } else {
+          // remove user from typing list
+          return prev.filter((u) => u.id !== userId);
+        }
+      });
+
+      // auto-remove typing indicator after 3 seconds
+      if (isTyping) {
+        setTimeout(() => {
+          setTypingUsers((prev) => prev.filter((u) => u.id !== userId));
+        }, 3000);
+      }
+    };
+
     // register event listeners
     socket.on('newMessage', handleNewMessage);
     socket.on('roomJoined', handleRoomJoined);
     socket.on('roomDeleted', handleRoomDeleted);
+    socket.on('userTyping', handleUserTyping);
     socket.on('error', handleError);
 
     // cleanup: remove event listeners on unmount or when socket changes
@@ -256,9 +378,10 @@ const Chat = () => {
       socket.off('newMessage', handleNewMessage);
       socket.off('roomJoined', handleRoomJoined);
       socket.off('roomDeleted', handleRoomDeleted);
+      socket.off('userTyping', handleUserTyping);
       socket.off('error', handleError);
     };
-  }, [socket, isConnected, activeRoomId]);
+  }, [socket, isConnected, activeRoomId, activeRoom]);
 
   // join active room socket namespace when room changes
   useEffect(() => {
@@ -287,6 +410,12 @@ const Chat = () => {
         <span style={styles.userName}>
           {user?.firstName} {user?.lastName}
         </span>
+        <button
+          onClick={() => navigate('/profile')}
+          style={styles.profileButton}
+        >
+          Profile
+        </button>
         <button onClick={handleLogout} style={styles.logoutButton}>
           Logout
         </button>
@@ -301,6 +430,7 @@ const Chat = () => {
       activeRoomId={activeRoomId}
       onRoomSelect={handleRoomSelect}
       onCreateRoom={() => setIsCreateModalOpen(true)}
+      onNewDM={() => setIsDMModalOpen(true)}
     />
   );
 
@@ -317,6 +447,11 @@ const Chat = () => {
       );
     }
 
+    // show loading spinner while fetching messages
+    if (isLoadingMessages) {
+      return <LoadingSpinner size="large" message="Loading messages..." />;
+    }
+
     return (
       <>
         <MessageFeed
@@ -324,7 +459,12 @@ const Chat = () => {
           currentUserId={user?.id}
           roomName={activeRoom?.name || 'Chat Room'}
         />
-        <MessageInput onSendMessage={handleSendMessage} disabled={!isConnected} />
+        <TypingIndicator typingUsers={typingUsers} />
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          onTyping={handleTyping}
+          disabled={!isConnected}
+        />
       </>
     );
   };
@@ -335,6 +475,7 @@ const Chat = () => {
       room={activeRoom}
       currentUserId={user?.id}
       onDeleteRoom={handleDeleteRoom}
+      onInviteUser={() => setIsInviteModalOpen(true)}
     />
   );
 
@@ -355,6 +496,23 @@ const Chat = () => {
         isCreating={isCreatingRoom}
       />
 
+      {/* direct message modal */}
+      <UserSearchModal
+        isOpen={isDMModalOpen}
+        onClose={() => setIsDMModalOpen(false)}
+        onSelectUser={handleCreateDM}
+        mode="dm"
+      />
+
+      {/* invite user to room modal */}
+      <UserSearchModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+        onSelectUser={handleInviteUser}
+        mode="invite"
+        currentRoomParticipants={activeRoom?.participants || []}
+      />
+
       {/* error notification (temporary display) */}
       {error && (
         <div style={styles.errorNotification}>
@@ -369,12 +527,15 @@ const Chat = () => {
 };
 
 const styles = {
+  // Discord-like Dark Theme
   headerContainer: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '12px 20px',
-    backgroundColor: '#ffffff',
+    padding: '12px 16px',
+    backgroundColor: '#1a1a1a',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+    height: '48px',
   },
   headerLeft: {
     display: 'flex',
@@ -383,33 +544,46 @@ const styles = {
   },
   logo: {
     margin: 0,
-    fontSize: '22px',
+    fontSize: '16px',
     fontWeight: '700',
-    color: '#1da1f2',
+    color: '#ffffff',
+    letterSpacing: '1px',
   },
   connectionStatus: {
-    fontSize: '13px',
-    color: '#657786',
+    fontSize: '11px',
+    color: 'rgba(255, 255, 255, 0.4)',
     fontStyle: 'italic',
+    fontWeight: '500',
   },
   headerRight: {
     display: 'flex',
     alignItems: 'center',
-    gap: '16px',
+    gap: '8px',
   },
   userName: {
-    fontSize: '14px',
-    color: '#14171a',
+    fontSize: '13px',
+    color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
   },
-  logoutButton: {
-    padding: '8px 16px',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#ffffff',
-    backgroundColor: '#e0245e',
+  profileButton: {
+    padding: '6px 12px',
+    fontSize: '13px',
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     border: 'none',
-    borderRadius: '20px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+  },
+  logoutButton: {
+    padding: '6px 12px',
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#ffffff',
+    backgroundColor: '#da373c',
+    border: 'none',
+    borderRadius: '4px',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
   },
@@ -419,43 +593,49 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     height: '100%',
-    padding: '40px',
+    padding: '60px 40px',
     textAlign: 'center',
+    backgroundColor: '#0a0a0a',
   },
   noRoomTitle: {
     fontSize: '24px',
-    fontWeight: '700',
-    color: '#14171a',
+    fontWeight: '600',
+    color: '#ffffff',
     marginBottom: '12px',
   },
   noRoomText: {
-    fontSize: '16px',
-    color: '#657786',
+    fontSize: '15px',
+    color: 'rgba(255, 255, 255, 0.5)',
     maxWidth: '400px',
+    lineHeight: '1.6',
   },
   errorNotification: {
     position: 'fixed',
-    bottom: '20px',
-    right: '20px',
-    backgroundColor: '#e0245e',
+    bottom: '24px',
+    right: '24px',
+    backgroundColor: '#da373c',
     color: '#ffffff',
     padding: '16px 20px',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+    borderRadius: '6px',
+    boxShadow: '0 8px 16px rgba(0, 0, 0, 0.4)',
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
     zIndex: 3000,
     maxWidth: '400px',
+    animation: 'slideUp 0.3s ease-out',
   },
   errorClose: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     border: 'none',
     color: '#ffffff',
-    fontSize: '24px',
+    fontSize: '18px',
     cursor: 'pointer',
-    padding: '0',
+    padding: '2px 8px',
     marginLeft: 'auto',
+    borderRadius: '4px',
+    transition: 'background-color 0.2s',
+    fontWeight: '600',
   },
 };
 

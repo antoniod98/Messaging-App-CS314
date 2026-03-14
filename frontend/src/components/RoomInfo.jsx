@@ -1,7 +1,9 @@
 import { getUserInitials } from '../utils/dateFormat';
+import { useSocket } from '../context/SocketContext';
 
 // right sidebar showing room details and participants
-const RoomInfo = ({ room, currentUserId, onDeleteRoom }) => {
+const RoomInfo = ({ room, currentUserId, onDeleteRoom, onInviteUser }) => {
+  const { onlineUsers } = useSocket();
   if (!room) {
     return (
       <div style={styles.container}>
@@ -13,6 +15,7 @@ const RoomInfo = ({ room, currentUserId, onDeleteRoom }) => {
   }
 
   const isCreator = room.creator.id === currentUserId;
+  const isDM = room.isDM;
 
   return (
     <div style={styles.container}>
@@ -47,19 +50,37 @@ const RoomInfo = ({ room, currentUserId, onDeleteRoom }) => {
 
       {/* participants section */}
       <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>
-          Participants ({room.participants.length})
-        </h3>
+        <div style={styles.sectionHeader}>
+          <h3 style={styles.sectionTitle}>
+            Participants ({room.participants.length})
+          </h3>
+          {!isDM && (
+            <button
+              style={styles.inviteButton}
+              onClick={onInviteUser}
+              title="Invite user to this room"
+            >
+              +
+            </button>
+          )}
+        </div>
 
         <div style={styles.participantsList}>
           {room.participants.map((participant) => {
             const initials = getUserInitials(participant.firstName, participant.lastName);
             const isCurrentUser = participant.id === currentUserId;
+            const isOnline = onlineUsers.includes(participant.id);
 
             return (
               <div key={participant.id} style={styles.participantItem}>
-                <div style={styles.participantAvatar}>
-                  <span style={styles.participantAvatarText}>{initials}</span>
+                <div style={{ position: 'relative' }}>
+                  <div style={styles.participantAvatar}>
+                    <span style={styles.participantAvatarText}>{initials}</span>
+                  </div>
+                  {/* online status indicator */}
+                  {isOnline && (
+                    <div style={styles.onlineIndicator} title="Online"></div>
+                  )}
                 </div>
                 <div style={styles.participantInfo}>
                   <div style={styles.participantName}>
@@ -98,53 +119,81 @@ const styles = {
     textAlign: 'center',
   },
   emptyText: {
-    fontSize: '14px',
-    color: '#657786',
+    fontSize: '13px',
+    color: 'rgba(255, 255, 255, 0.4)',
   },
   section: {
-    marginBottom: '24px',
-    paddingBottom: '24px',
-    borderBottom: '1px solid #e1e8ed',
+    marginBottom: '20px',
+    paddingBottom: '20px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
   },
-  sectionTitle: {
-    fontSize: '16px',
-    fontWeight: '700',
-    color: '#14171a',
-    marginBottom: '16px',
-  },
-  detailItem: {
+  sectionHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: '12px',
   },
+  sectionTitle: {
+    fontSize: '12px',
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.6)',
+    margin: 0,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  inviteButton: {
+    width: '20px',
+    height: '20px',
+    padding: 0,
+    fontSize: '18px',
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'color 0.2s, background-color 0.2s',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: '1',
+  },
+  detailItem: {
+    marginBottom: '10px',
+  },
   detailLabel: {
-    fontSize: '14px',
-    color: '#657786',
+    fontSize: '12px',
+    color: 'rgba(255, 255, 255, 0.4)',
     display: 'block',
     marginBottom: '4px',
   },
   detailValue: {
-    fontSize: '15px',
-    color: '#14171a',
+    fontSize: '14px',
+    color: 'rgba(255, 255, 255, 0.85)',
     fontWeight: '500',
   },
   youLabel: {
-    color: '#1da1f2',
-    fontSize: '14px',
+    color: '#5865f2',
+    fontSize: '13px',
   },
   participantsList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
+    gap: '8px',
   },
   participantItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: '10px',
+    padding: '6px',
+    borderRadius: '4px',
+    transition: 'background-color 0.15s',
   },
   participantAvatar: {
-    width: '40px',
-    height: '40px',
+    width: '32px',
+    height: '32px',
     borderRadius: '50%',
-    backgroundColor: '#657786',
+    backgroundColor: '#5865f2',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -152,41 +201,51 @@ const styles = {
   },
   participantAvatarText: {
     color: '#ffffff',
-    fontSize: '16px',
-    fontWeight: 'bold',
+    fontSize: '14px',
+    fontWeight: '600',
   },
   participantInfo: {
     flex: 1,
     minWidth: 0,
   },
   participantName: {
-    fontSize: '15px',
-    fontWeight: '600',
-    color: '#14171a',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: '2px',
   },
   participantEmail: {
-    fontSize: '13px',
-    color: '#657786',
+    fontSize: '12px',
+    color: 'rgba(255, 255, 255, 0.4)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
+  onlineIndicator: {
+    position: 'absolute',
+    bottom: '-2px',
+    right: '-2px',
+    width: '10px',
+    height: '10px',
+    borderRadius: '50%',
+    backgroundColor: '#23a559',
+    border: '2px solid #151515',
+  },
   deleteButton: {
     width: '100%',
-    padding: '12px',
-    fontSize: '15px',
+    padding: '10px',
+    fontSize: '14px',
     fontWeight: '600',
     color: '#ffffff',
-    backgroundColor: '#e0245e',
+    backgroundColor: '#da373c',
     border: 'none',
-    borderRadius: '20px',
+    borderRadius: '4px',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
   },
   deleteWarning: {
-    fontSize: '13px',
-    color: '#657786',
+    fontSize: '12px',
+    color: 'rgba(255, 255, 255, 0.4)',
     marginTop: '8px',
     textAlign: 'center',
   },

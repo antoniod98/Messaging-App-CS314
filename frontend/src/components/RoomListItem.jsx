@@ -19,15 +19,21 @@ const RoomListItem = ({ room, isActive, onClick }) => {
       }}
     >
       {/* room avatar circle */}
-      <div style={styles.avatar}>
+      <div style={{
+        ...styles.avatar,
+        ...(room.isDM ? { borderRadius: '50%', background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' } : {})
+      }}>
         <span style={styles.avatarText}>{room.name.charAt(0).toUpperCase()}</span>
       </div>
 
       {/* room details */}
       <div style={styles.details}>
-        <div style={styles.roomName}>{room.name}</div>
+        <div style={styles.roomName}>
+          {room.isDM && <span style={styles.dmBadge}>💬 </span>}
+          {room.name}
+        </div>
         <div style={styles.participantCount}>
-          {room.participantCount} {room.participantCount === 1 ? 'participant' : 'participants'}
+          {room.isDM ? 'Direct Message' : `${room.participantCount} ${room.participantCount === 1 ? 'participant' : 'participants'}`}
         </div>
       </div>
     </div>
@@ -38,24 +44,25 @@ const styles = {
   container: {
     display: 'flex',
     alignItems: 'center',
-    padding: '12px 16px',
+    padding: '6px 8px',
+    margin: '0 8px 2px 8px',
     cursor: 'pointer',
-    borderBottom: '1px solid #e1e8ed',
-    backgroundColor: '#ffffff',
-    transition: 'background-color 0.2s',
+    borderRadius: '4px',
+    backgroundColor: 'transparent',
+    transition: 'background-color 0.15s',
+    position: 'relative',
   },
   hover: {
-    backgroundColor: '#f7f9fa',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
   },
   active: {
-    backgroundColor: '#e8f5fe',
-    borderLeft: '3px solid #1da1f2',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   avatar: {
-    width: '48px',
-    height: '48px',
-    borderRadius: '50%',
-    backgroundColor: '#1da1f2',
+    width: '32px',
+    height: '32px',
+    borderRadius: '16px',
+    backgroundColor: '#2a2a2a',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -63,26 +70,30 @@ const styles = {
     flexShrink: 0,
   },
   avatarText: {
-    color: '#ffffff',
-    fontSize: '20px',
-    fontWeight: 'bold',
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: '14px',
+    fontWeight: '600',
   },
   details: {
     flex: 1,
     minWidth: 0,
   },
   roomName: {
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#14171a',
-    marginBottom: '4px',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
   participantCount: {
-    fontSize: '14px',
-    color: '#657786',
+    fontSize: '12px',
+    color: 'rgba(255, 255, 255, 0.4)',
+    marginTop: '2px',
+  },
+  dmBadge: {
+    fontSize: '12px',
+    marginRight: '4px',
   },
 };
 

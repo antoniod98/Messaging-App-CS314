@@ -3,6 +3,82 @@ const router = express.Router();
 const { ChatRoom, Message, User } = require('../models');
 const { authenticate } = require('../middleware/auth');
 
+// POST /api/rooms/dm - create or get direct message with another user (protected route)
+router.post('/dm', authenticate, async (req, res) => {
+  try {
+    const { userId: otherUserId } = req.body;
+    const currentUserId = req.user.userId;
+
+    // validation: check if other user ID is provided
+    if (!otherUserId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required',
+      });
+    }
+
+    // validation: cannot DM yourself
+    if (otherUserId === currentUserId.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot create a direct message with yourself',
+      });
+    }
+
+    // verify the other user exists
+    const otherUser = await User.findById(otherUserId);
+    if (!otherUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // find or create DM
+    const dm = await ChatRoom.findOrCreateDM(currentUserId, otherUserId);
+
+    // get the other participant (not the current user)
+    const otherParticipant = dm.participants.find(
+      (p) => p._id.toString() !== currentUserId.toString()
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Direct message ready',
+      room: {
+        id: dm._id,
+        name: `${otherParticipant.firstName} ${otherParticipant.lastName}`,
+        isDM: true,
+        creator: {
+          id: dm.creator,
+        },
+        participants: dm.participants.map((p) => ({
+          id: p._id,
+          firstName: p.firstName,
+          lastName: p.lastName,
+          email: p.email,
+        })),
+        participantCount: dm.participants.length,
+        createdAt: dm.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error('Create DM error:', error);
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error while creating direct message',
+    });
+  }
+});
+
 // POST /api/rooms - create a new chat room (protected route)
 router.post('/', authenticate, async (req, res) => {
   try {
@@ -100,24 +176,38 @@ router.get('/', authenticate, async (req, res) => {
 
     res.status(200).json({
       success: true,
-      rooms: rooms.map((room) => ({
-        id: room._id,
-        name: room.name,
-        creator: {
-          id: room.creator._id,
-          firstName: room.creator.firstName,
-          lastName: room.creator.lastName,
-          email: room.creator.email,
-        },
-        participants: room.participants.map((p) => ({
-          id: p._id,
-          firstName: p.firstName,
-          lastName: p.lastName,
-          email: p.email,
-        })),
-        participantCount: room.participants.length,
-        createdAt: room.createdAt,
-      })),
+      rooms: rooms.map((room) => {
+        // for DMs, use the other participant's name
+        let displayName = room.name;
+        if (room.isDM) {
+          const otherParticipant = room.participants.find(
+            (p) => p._id.toString() !== userId.toString()
+          );
+          if (otherParticipant) {
+            displayName = `${otherParticipant.firstName} ${otherParticipant.lastName}`;
+          }
+        }
+
+        return {
+          id: room._id,
+          name: displayName,
+          isDM: room.isDM || false,
+          creator: {
+            id: room.creator._id,
+            firstName: room.creator.firstName,
+            lastName: room.creator.lastName,
+            email: room.creator.email,
+          },
+          participants: room.participants.map((p) => ({
+            id: p._id,
+            firstName: p.firstName,
+            lastName: p.lastName,
+            email: p.email,
+          })),
+          participantCount: room.participants.length,
+          createdAt: room.createdAt,
+        };
+      }),
     });
   } catch (error) {
     console.error('Get rooms error:', error);
