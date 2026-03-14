@@ -17,6 +17,15 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // validation: ensure inputs are strings (prevent NoSQL injection)
+    if (typeof email !== 'string' || typeof password !== 'string' ||
+        typeof firstName !== 'string' || typeof lastName !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid input types',
+      });
+    }
+
     // validation: check password length
     if (password.length < 8) {
       return res.status(400).json({
@@ -103,6 +112,14 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Email and password are required',
+      });
+    }
+
+    // validation: ensure email is a string (prevent NoSQL injection)
+    if (typeof email !== 'string' || typeof password !== 'string') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password',
       });
     }
 

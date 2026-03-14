@@ -117,6 +117,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // update user profile (called after successful profile update)
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+  };
+
   const value = {
     user,
     loading,
@@ -124,6 +129,7 @@ export const AuthProvider = ({ children }) => {
     register,
     login,
     logout,
+    updateUser,
     isAuthenticated: !!user,
   };
 

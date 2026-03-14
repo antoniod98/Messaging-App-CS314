@@ -143,3 +143,7 @@ vite.config.ts.timestamp-*
 
 # Development logs (personal notes, session tracking)
 DEVELOPMENT_LOG.md
+
+# Test documentation (auto-generated)
+TESTING.md
+TEST-QUICK-REFERENCE.md

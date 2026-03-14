@@ -1,32 +1,44 @@
-import { formatMessageTime } from '../utils/dateFormat';
-import { getUserInitials } from '../utils/dateFormat';
+import {
+  formatMessageTime,
+  formatFullTimestamp,
+  getUserInitials,
+} from '../utils/dateFormat';
 
-// individual message display component
+// Generate avatar background color based on user name
+const getAvatarColor = (firstName, lastName) => {
+  const colors = [
+    '#5865f2', // Discord blurple
+    '#eb459e', // Pink
+    '#ed4245', // Red
+    '#f26522', // Orange
+    '#f2c94c', // Yellow
+    '#57f287', // Green
+    '#00aff4', // Cyan
+    '#9b84ee', // Purple
+  ];
+  const index = (firstName.charCodeAt(0) + lastName.charCodeAt(0)) % colors.length;
+  return colors[index];
+};
+
 const MessageItem = ({ message, isOwnMessage }) => {
   const senderName = `${message.sender.firstName} ${message.sender.lastName}`;
   const initials = getUserInitials(message.sender.firstName, message.sender.lastName);
+  const fullTimestamp = formatFullTimestamp(message.timestamp);
+  const avatarBg = getAvatarColor(message.sender.firstName, message.sender.lastName);
 
   return (
-    <div
-      style={{
-        ...styles.container,
-        ...(isOwnMessage ? styles.ownMessage : {}),
-      }}
-    >
-      {/* sender avatar */}
-      <div style={styles.avatar}>
+    <div style={styles.container}>
+      <div style={{...styles.avatar, backgroundColor: avatarBg}}>
         <span style={styles.avatarText}>{initials}</span>
       </div>
 
-      {/* message content */}
       <div style={styles.content}>
-        {/* sender name and timestamp */}
         <div style={styles.header}>
           <span style={styles.senderName}>{senderName}</span>
-          <span style={styles.timestamp}>{formatMessageTime(message.timestamp)}</span>
+          <span style={styles.timestamp} title={fullTimestamp}>
+            {formatMessageTime(message.timestamp)}
+          </span>
         </div>
-
-        {/* message text */}
         <div style={styles.messageText}>{message.content}</div>
       </div>
     </div>
@@ -36,52 +48,51 @@ const MessageItem = ({ message, isOwnMessage }) => {
 const styles = {
   container: {
     display: 'flex',
-    padding: '12px 16px',
-    borderBottom: '1px solid #f7f9fa',
-    transition: 'background-color 0.2s',
-  },
-  ownMessage: {
-    backgroundColor: '#f7f9fa',
+    padding: '4px 16px 4px 16px',
+    gap: '16px',
+    transition: 'background-color 0.15s',
   },
   avatar: {
     width: '40px',
     height: '40px',
     borderRadius: '50%',
-    backgroundColor: '#657786',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: '12px',
     flexShrink: 0,
+    marginTop: '4px',
   },
   avatarText: {
     color: '#ffffff',
     fontSize: '16px',
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   content: {
     flex: 1,
     minWidth: 0,
+    paddingTop: '2px',
   },
   header: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'baseline',
     marginBottom: '4px',
+    gap: '8px',
   },
   senderName: {
     fontSize: '15px',
-    fontWeight: '700',
-    color: '#14171a',
-    marginRight: '8px',
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   timestamp: {
-    fontSize: '13px',
-    color: '#657786',
+    fontSize: '12px',
+    color: 'rgba(255, 255, 255, 0.4)',
+    cursor: 'help',
+    fontWeight: '400',
   },
   messageText: {
     fontSize: '15px',
-    color: '#14171a',
-    lineHeight: '1.5',
+    lineHeight: '1.375',
+    color: 'rgba(255, 255, 255, 0.85)',
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
   },

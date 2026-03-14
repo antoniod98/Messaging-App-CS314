@@ -12,6 +12,7 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState([]);
   const socketRef = useRef(null);
 
   useEffect(() => {
@@ -60,6 +61,8 @@ export const SocketProvider = ({ children }) => {
       console.log('Socket.IO connected successfully');
       setIsConnected(true);
       setIsConnecting(false);
+      // request initial online users list
+      newSocket.emit('getOnlineUsers');
     });
 
     // handle disconnection
@@ -106,6 +109,23 @@ export const SocketProvider = ({ children }) => {
       console.error('Socket.IO error:', error);
     });
 
+    // handle user status changes
+    newSocket.on('userStatusChange', (data) => {
+      const { userId, status } = data;
+      setOnlineUsers((prev) => {
+        if (status === 'online') {
+          return prev.includes(userId) ? prev : [...prev, userId];
+        } else {
+          return prev.filter((id) => id !== userId);
+        }
+      });
+    });
+
+    // handle online users list response
+    newSocket.on('onlineUsersList', (userIds) => {
+      setOnlineUsers(userIds);
+    });
+
     socketRef.current = newSocket;
     setSocket(newSocket);
 
@@ -124,6 +144,7 @@ export const SocketProvider = ({ children }) => {
     socket,
     isConnected,
     isConnecting,
+    onlineUsers,
   };
 
   return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;

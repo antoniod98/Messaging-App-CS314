@@ -4,11 +4,17 @@ const chatRoomSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Chat room name is required'],
-      unique: true,
+      required: function() {
+        // name is only required for group chats, not DMs
+        return !this.isDM;
+      },
       trim: true,
       minlength: [3, 'Chat room name must be at least 3 characters'],
       maxlength: [50, 'Chat room name cannot exceed 50 characters'],
+    },
+    isDM: {
+      type: Boolean,
+      default: false,
     },
     creator: {
       type: mongoose.Schema.Types.ObjectId,
@@ -35,6 +41,7 @@ const chatRoomSchema = new mongoose.Schema(
 chatRoomSchema.index({ name: 1 }); // fast room name lookups
 chatRoomSchema.index({ creator: 1 }); // fast lookup of rooms created by user
 chatRoomSchema.index({ participants: 1 }); // fast lookup of rooms user belongs to
+chatRoomSchema.index({ isDM: 1, participants: 1 }); // fast lookup of DMs between users
 
 // pre-save middleware: auto-add creator to participants if not already included
 chatRoomSchema.pre('save', function () {
@@ -64,6 +71,32 @@ chatRoomSchema.methods.removeParticipant = function (userId) {
     (participant) => participant.toString() !== userId.toString()
   );
   return this.save();
+};
+
+// static method to find or create a direct message between two users
+chatRoomSchema.statics.findOrCreateDM = async function (userId1, userId2) {
+  // normalize user IDs to ensure consistent ordering
+  const userIds = [userId1.toString(), userId2.toString()].sort();
+
+  // check if DM already exists between these two users
+  const existingDM = await this.findOne({
+    isDM: true,
+    participants: { $all: userIds, $size: 2 },
+  }).populate('participants', 'firstName lastName email');
+
+  if (existingDM) {
+    return existingDM;
+  }
+
+  // create new DM
+  const newDM = await this.create({
+    isDM: true,
+    creator: userId1,
+    participants: userIds,
+  });
+
+  await newDM.populate('participants', 'firstName lastName email');
+  return newDM;
 };
 
 const ChatRoom = mongoose.model('ChatRoom', chatRoomSchema);

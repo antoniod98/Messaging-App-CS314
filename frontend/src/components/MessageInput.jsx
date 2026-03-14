@@ -1,15 +1,36 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 // message input component with character limit and validation
-const MessageInput = ({ onSendMessage, disabled }) => {
+const MessageInput = ({ onSendMessage, onTyping, disabled }) => {
   const [message, setMessage] = useState('');
   const maxLength = 2000;
+  const typingTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
 
   // handle input change
   const handleChange = (e) => {
     const value = e.target.value;
     if (value.length <= maxLength) {
       setMessage(value);
+
+      // emit typing event
+      if (onTyping && value.trim().length > 0) {
+        if (!isTypingRef.current) {
+          onTyping(true);
+          isTypingRef.current = true;
+        }
+
+        // clear previous timeout
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+
+        // set new timeout to stop typing indicator after 2 seconds of inactivity
+        typingTimeoutRef.current = setTimeout(() => {
+          onTyping(false);
+          isTypingRef.current = false;
+        }, 2000);
+      }
     }
   };
 
@@ -20,6 +41,17 @@ const MessageInput = ({ onSendMessage, disabled }) => {
     // validation: don't send empty messages
     if (trimmedMessage.length === 0) {
       return;
+    }
+
+    // stop typing indicator
+    if (onTyping && isTypingRef.current) {
+      onTyping(false);
+      isTypingRef.current = false;
+    }
+
+    // clear typing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
     }
 
     onSendMessage(trimmedMessage);
@@ -63,7 +95,7 @@ const MessageInput = ({ onSendMessage, disabled }) => {
           value={message}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          placeholder="What's happening?"
+          placeholder="Message"
           disabled={disabled}
           rows={1}
         />
@@ -85,24 +117,24 @@ const MessageInput = ({ onSendMessage, disabled }) => {
 
 const styles = {
   container: {
-    borderTop: '1px solid #e1e8ed',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0a0a0a',
+    padding: '0 16px 24px 16px',
   },
   counterContainer: {
-    padding: '8px 16px 0',
+    padding: '8px 0 4px',
     display: 'flex',
     justifyContent: 'flex-end',
   },
   counter: {
-    fontSize: '13px',
-    color: '#657786',
+    fontSize: '11px',
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontWeight: '500',
   },
   counterMax: {
-    color: '#e0245e',
+    color: '#ed4245',
     fontWeight: '600',
   },
   inputContainer: {
-    padding: '16px',
     display: 'flex',
     alignItems: 'flex-end',
     gap: '12px',
@@ -111,30 +143,34 @@ const styles = {
     flex: 1,
     minHeight: '44px',
     maxHeight: '200px',
-    padding: '12px',
+    padding: '11px 14px',
     fontSize: '15px',
-    border: '1px solid #e1e8ed',
-    borderRadius: '20px',
+    border: 'none',
+    borderRadius: '8px',
     resize: 'none',
     fontFamily: 'inherit',
     outline: 'none',
-    transition: 'border-color 0.2s',
+    transition: 'background-color 0.2s',
+    backgroundColor: '#2a2a2a',
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   sendButton: {
-    padding: '12px 24px',
-    fontSize: '15px',
+    padding: '11px 16px',
+    fontSize: '14px',
     fontWeight: '600',
     color: '#ffffff',
-    backgroundColor: '#1da1f2',
+    backgroundColor: '#5865f2',
     border: 'none',
-    borderRadius: '20px',
+    borderRadius: '8px',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
     whiteSpace: 'nowrap',
+    height: '44px',
   },
   sendButtonDisabled: {
-    backgroundColor: '#aab8c2',
+    backgroundColor: '#4e5058',
     cursor: 'not-allowed',
+    opacity: 0.6,
   },
 };
 
