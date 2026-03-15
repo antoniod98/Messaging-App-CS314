@@ -1,8 +1,12 @@
 import { useState } from 'react';
 
+const MAX_ROOM_IMAGE_BYTES = 2 * 1024 * 1024;
+
 // modal dialog for creating a new chat room
 const CreateRoomModal = ({ isOpen, onClose, onCreateRoom, isCreating }) => {
   const [roomName, setRoomName] = useState('');
+  const [roomImage, setRoomImage] = useState(null);
+  const [roomImagePreview, setRoomImagePreview] = useState(null);
   const [error, setError] = useState('');
 
   const minLength = 3;
@@ -17,6 +21,47 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom, isCreating }) => {
     if (error) {
       setError('');
     }
+  };
+
+  const fileToDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Failed to read the selected image'));
+      reader.readAsDataURL(file);
+    });
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image file for the room');
+      return;
+    }
+
+    if (file.size > MAX_ROOM_IMAGE_BYTES) {
+      setError('Room image must be 2MB or smaller');
+      return;
+    }
+
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setRoomImage(dataUrl);
+      setRoomImagePreview(dataUrl);
+      setError('');
+    } catch (fileError) {
+      setError(fileError.message);
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setRoomImage(null);
+    setRoomImagePreview(null);
   };
 
   // validate room name
@@ -49,11 +94,13 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom, isCreating }) => {
       return;
     }
 
-    const success = await onCreateRoom(roomName.trim());
+    const success = await onCreateRoom(roomName.trim(), roomImage);
 
     // close modal and reset form on success
     if (success) {
       setRoomName('');
+      setRoomImage(null);
+      setRoomImagePreview(null);
       setError('');
       onClose();
     }
@@ -62,6 +109,8 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom, isCreating }) => {
   // handle modal close
   const handleClose = () => {
     setRoomName('');
+    setRoomImage(null);
+    setRoomImagePreview(null);
     setError('');
     onClose();
   };
@@ -87,6 +136,43 @@ const CreateRoomModal = ({ isOpen, onClose, onCreateRoom, isCreating }) => {
 
         {/* form */}
         <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={styles.imageSection}>
+            <div style={styles.imagePreview}>
+              {roomImagePreview ? (
+                <img src={roomImagePreview} alt="Room preview" style={styles.imagePreviewImg} />
+              ) : (
+                <div style={styles.imageFallback}>
+                  {(roomName.trim().charAt(0) || '#').toUpperCase()}
+                </div>
+              )}
+            </div>
+
+            <div style={styles.imageActions}>
+              <label style={styles.uploadButton}>
+                Upload Room Image
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={handleImageChange}
+                  disabled={isCreating}
+                  style={styles.hiddenInput}
+                />
+              </label>
+              <button
+                type="button"
+                style={{
+                  ...styles.removeImageButton,
+                  ...(!roomImagePreview ? styles.removeImageButtonDisabled : {}),
+                }}
+                onClick={handleRemoveImage}
+                disabled={!roomImagePreview || isCreating}
+              >
+                Remove Image
+              </button>
+              <span style={styles.imageHelper}>Optional. PNG, JPG, WEBP, or GIF up to 2MB.</span>
+            </div>
+          </div>
+
           <div style={styles.inputGroup}>
             <label htmlFor="roomName" style={styles.label}>
               Room Name
@@ -205,6 +291,80 @@ const styles = {
   },
   form: {
     padding: '24px',
+  },
+  imageSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    marginBottom: '20px',
+    padding: '16px',
+    borderRadius: '8px',
+    backgroundColor: '#111111',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
+  },
+  imagePreview: {
+    width: '72px',
+    height: '72px',
+    borderRadius: '20px',
+    overflow: 'hidden',
+    flexShrink: 0,
+    backgroundColor: '#2a2a2a',
+  },
+  imagePreviewImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+  },
+  imageFallback: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'rgba(255, 255, 255, 0.82)',
+    fontSize: '24px',
+    fontWeight: '700',
+    background: 'linear-gradient(135deg, #3b3b3b 0%, #1f1f1f 100%)',
+  },
+  imageActions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  uploadButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 'fit-content',
+    padding: '9px 12px',
+    borderRadius: '6px',
+    backgroundColor: '#5865f2',
+    color: '#ffffff',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+  hiddenInput: {
+    display: 'none',
+  },
+  removeImageButton: {
+    width: 'fit-content',
+    padding: 0,
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: 'rgba(255, 255, 255, 0.72)',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+  removeImageButtonDisabled: {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+  },
+  imageHelper: {
+    fontSize: '12px',
+    color: 'rgba(255, 255, 255, 0.45)',
   },
   inputGroup: {
     marginBottom: '24px',

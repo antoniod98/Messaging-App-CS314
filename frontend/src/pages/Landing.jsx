@@ -1,10 +1,34 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const Landing = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [hoveredFeature, setHoveredFeature] = useState(null);
+
+  const features = [
+    {
+      icon: '⚡',
+      title: 'Lightning Fast',
+      description: 'Real-time messaging powered by WebSocket technology. Messages delivered instantly.',
+    },
+    {
+      icon: '🔒',
+      title: 'Secure & Private',
+      description: 'End-to-end encryption ensures your conversations remain private and secure.',
+    },
+    {
+      icon: '👥',
+      title: 'Team Collaboration',
+      description: 'Create rooms, direct messages, and invite team members effortlessly.',
+    },
+    {
+      icon: '📱',
+      title: 'Cross-Platform',
+      description: 'Access from anywhere. Responsive design works on desktop, tablet, and mobile.',
+    },
+  ];
 
   // If already logged in, redirect to chat
   useEffect(() => {
@@ -74,37 +98,39 @@ const Landing = () => {
           <h2 style={styles.sectionTitle}>Built for Modern Teams</h2>
 
           <div style={styles.featureGrid}>
-            <div style={styles.featureCard}>
-              <div style={styles.featureIcon}>⚡</div>
-              <h3 style={styles.featureTitle}>Lightning Fast</h3>
-              <p style={styles.featureDesc}>
-                Real-time messaging powered by WebSocket technology. Messages delivered instantly.
-              </p>
-            </div>
+            {features.map((feature, index) => {
+              const isHovered = hoveredFeature === index;
 
-            <div style={styles.featureCard}>
-              <div style={styles.featureIcon}>🔒</div>
-              <h3 style={styles.featureTitle}>Secure & Private</h3>
-              <p style={styles.featureDesc}>
-                End-to-end encryption ensures your conversations remain private and secure.
-              </p>
-            </div>
-
-            <div style={styles.featureCard}>
-              <div style={styles.featureIcon}>👥</div>
-              <h3 style={styles.featureTitle}>Team Collaboration</h3>
-              <p style={styles.featureDesc}>
-                Create rooms, direct messages, and invite team members effortlessly.
-              </p>
-            </div>
-
-            <div style={styles.featureCard}>
-              <div style={styles.featureIcon}>📱</div>
-              <h3 style={styles.featureTitle}>Cross-Platform</h3>
-              <p style={styles.featureDesc}>
-                Access from anywhere. Responsive design works on desktop, tablet, and mobile.
-              </p>
-            </div>
+              return (
+                <div
+                  key={feature.title}
+                  style={{
+                    ...styles.featureCard,
+                    ...(isHovered ? styles.featureCardHover : {}),
+                  }}
+                  onMouseEnter={() => setHoveredFeature(index)}
+                  onMouseLeave={() => setHoveredFeature(null)}
+                >
+                  <div
+                    style={{
+                      ...styles.featureIcon,
+                      ...(isHovered ? styles.featureIconHover : {}),
+                    }}
+                  >
+                    {feature.icon}
+                  </div>
+                  <h3
+                    style={{
+                      ...styles.featureTitle,
+                      ...(isHovered ? styles.featureTitleHover : {}),
+                    }}
+                  >
+                    {feature.title}
+                  </h3>
+                  <p style={styles.featureDesc}>{feature.description}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -353,16 +379,35 @@ const styles = {
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: '12px',
     transition: 'all 0.3s ease',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  featureCardHover: {
+    transform: 'translateY(-10px)',
+    border: '1px solid rgba(255, 255, 255, 0.24)',
+    background:
+      'linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 100%)',
+    boxShadow: '0 20px 45px rgba(0, 0, 0, 0.35)',
   },
   featureIcon: {
     fontSize: '48px',
     marginBottom: '24px',
+    transition: 'transform 0.3s ease, filter 0.3s ease',
+  },
+  featureIconHover: {
+    transform: 'scale(1.08)',
+    filter: 'drop-shadow(0 12px 18px rgba(255, 255, 255, 0.18))',
   },
   featureTitle: {
     fontSize: '24px',
     fontWeight: '600',
     marginBottom: '12px',
     color: '#ffffff',
+    transition: 'color 0.3s ease, transform 0.3s ease',
+  },
+  featureTitleHover: {
+    color: '#f5f5f5',
+    transform: 'translateX(4px)',
   },
   featureDesc: {
     fontSize: '16px',
@@ -432,3 +477,4 @@ const styles = {
 };
 
 export default Landing;
+

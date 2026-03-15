@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { getUserInitials } from '../utils/dateFormat';
 
 // API base URL from environment variables
 const API_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:8747';
+const MAX_PROFILE_IMAGE_BYTES = 2 * 1024 * 1024;
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
@@ -13,9 +15,69 @@ const Profile = () => {
   // form state
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
+  const [profilePreview, setProfilePreview] = useState(user?.profileImageUrl || null);
+  const [selectedProfileImage, setSelectedProfileImage] = useState(null);
+  const [removeProfileImage, setRemoveProfileImage] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    setFirstName(user?.firstName || '');
+    setLastName(user?.lastName || '');
+    setProfilePreview(user?.profileImageUrl || null);
+    setSelectedProfileImage(null);
+    setRemoveProfileImage(false);
+  }, [user]);
+
+  const initials = getUserInitials(firstName || user?.firstName, lastName || user?.lastName);
+
+  const fileToDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Failed to read the selected image'));
+      reader.readAsDataURL(file);
+    });
+
+  const handleImageChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setError(null);
+    setSuccess(false);
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image file');
+      return;
+    }
+
+    if (file.size > MAX_PROFILE_IMAGE_BYTES) {
+      setError('Profile image must be 2MB or smaller');
+      return;
+    }
+
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setSelectedProfileImage(dataUrl);
+      setProfilePreview(dataUrl);
+      setRemoveProfileImage(false);
+    } catch (fileError) {
+      setError(fileError.message);
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedProfileImage(null);
+    setProfilePreview(null);
+    setRemoveProfileImage(true);
+    setError(null);
+    setSuccess(false);
+  };
 
   // handle form submission
   const handleSubmit = async (e) => {
@@ -37,6 +99,8 @@ const Profile = () => {
         {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
+          profileImage: selectedProfileImage,
+          removeProfileImage,
         },
         {
           headers: {
@@ -53,6 +117,8 @@ const Profile = () => {
         updateUser(response.data.user);
 
         setSuccess(true);
+        setSelectedProfileImage(null);
+        setRemoveProfileImage(false);
 
         // redirect to chat after 1.5 seconds
         setTimeout(() => {
@@ -78,9 +144,46 @@ const Profile = () => {
     <div style={styles.container}>
       <div style={styles.card}>
         <h1 style={styles.title}>Edit Profile</h1>
-        <p style={styles.subtitle}>Update your first and last name</p>
+        <p style={styles.subtitle}>Update your name and choose a profile photo</p>
 
         <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={styles.avatarSection}>
+            <div style={styles.avatarWrapper}>
+              {profilePreview ? (
+                <img src={profilePreview} alt="Profile preview" style={styles.avatarImage} />
+              ) : (
+                <div style={styles.avatarFallback}>{initials || '?'}</div>
+              )}
+            </div>
+
+            <div style={styles.avatarActions}>
+              <label style={styles.uploadButton}>
+                Upload Photo
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={handleImageChange}
+                  disabled={isSubmitting}
+                  style={styles.hiddenInput}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                disabled={isSubmitting || (!profilePreview && !user?.profileImageUrl)}
+                style={{
+                  ...styles.removeButton,
+                  ...(isSubmitting || (!profilePreview && !user?.profileImageUrl)
+                    ? styles.removeButtonDisabled
+                    : {}),
+                }}
+              >
+                Remove Photo
+              </button>
+              <span style={styles.helperText}>PNG, JPG, WEBP, or GIF up to 2MB</span>
+            </div>
+          </div>
+
           {/* current email (read-only) */}
           <div style={styles.formGroup}>
             <label style={styles.label}>Email (cannot be changed)</label>
@@ -197,6 +300,81 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '20px',
+  },
+  avatarSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '20px',
+    padding: '18px',
+    borderRadius: '10px',
+    backgroundColor: '#111111',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
+  },
+  avatarWrapper: {
+    width: '88px',
+    height: '88px',
+    borderRadius: '50%',
+    overflow: 'hidden',
+    flexShrink: 0,
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#0f172a',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+  },
+  avatarFallback: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#ffffff',
+    fontSize: '28px',
+    fontWeight: '700',
+    background: 'linear-gradient(135deg, #5865f2 0%, #3b82f6 100%)',
+  },
+  avatarActions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    minWidth: 0,
+  },
+  uploadButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 'fit-content',
+    padding: '10px 14px',
+    borderRadius: '6px',
+    backgroundColor: '#5865f2',
+    color: '#ffffff',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+  hiddenInput: {
+    display: 'none',
+  },
+  removeButton: {
+    width: 'fit-content',
+    padding: '0',
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: 'rgba(255, 255, 255, 0.72)',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '600',
+  },
+  removeButtonDisabled: {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
+  helperText: {
+    fontSize: '12px',
+    color: 'rgba(255, 255, 255, 0.5)',
   },
   formGroup: {
     display: 'flex',

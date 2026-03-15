@@ -19,11 +19,22 @@ const RoomListItem = ({ room, isActive, onClick }) => {
       }}
     >
       {/* room avatar circle */}
-      <div style={{
-        ...styles.avatar,
-        ...(room.isDM ? { borderRadius: '50%', background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' } : {})
-      }}>
-        <span style={styles.avatarText}>{room.name.charAt(0).toUpperCase()}</span>
+      <div
+        style={{
+          ...styles.avatar,
+          ...(room.isDM
+            ? {
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+              }
+            : {}),
+        }}
+      >
+        {room.roomImageUrl && !room.isDM ? (
+          <img src={room.roomImageUrl} alt={room.name} style={styles.avatarImage} />
+        ) : (
+          <span style={styles.avatarText}>{room.name.charAt(0).toUpperCase()}</span>
+        )}
       </div>
 
       {/* room details */}
@@ -68,6 +79,13 @@ const styles = {
     justifyContent: 'center',
     marginRight: '12px',
     flexShrink: 0,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
   },
   avatarText: {
     color: 'rgba(255, 255, 255, 0.7)',

@@ -16,6 +16,11 @@ const chatRoomSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    imagePath: {
+      type: String,
+      default: null,
+      trim: true,
+    },
     creator: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
