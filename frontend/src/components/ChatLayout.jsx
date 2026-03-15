@@ -25,14 +25,18 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
-    backgroundColor: '#0a0a0a',
+    background:
+      'radial-gradient(circle at top left, rgba(110, 168, 254, 0.1) 0%, transparent 28%), radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.06) 0%, transparent 24%), linear-gradient(180deg, #06070b 0%, #0b1020 48%, #090a0d 100%)',
   },
   header: {
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-    backgroundColor: '#1a1a1a',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+    background:
+      'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)',
     position: 'sticky',
     top: 0,
     zIndex: 1000,
+    backdropFilter: 'blur(22px)',
+    WebkitBackdropFilter: 'blur(22px)',
   },
   mainArea: {
     display: 'flex',
@@ -41,22 +45,27 @@ const styles = {
   },
   leftSidebar: {
     width: '240px',
-    borderRight: '1px solid rgba(255, 255, 255, 0.06)',
+    borderRight: '1px solid rgba(255, 255, 255, 0.08)',
     overflowY: 'auto',
-    backgroundColor: '#151515',
+    background:
+      'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 100%)',
+    backdropFilter: 'blur(20px)',
   },
   centerColumn: {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: '#0a0a0a',
+    backgroundColor: 'rgba(8, 10, 16, 0.58)',
     overflow: 'hidden',
+    backdropFilter: 'blur(14px)',
   },
   rightSidebar: {
     width: '240px',
     overflowY: 'auto',
-    backgroundColor: '#151515',
-    borderLeft: '1px solid rgba(255, 255, 255, 0.06)',
+    background:
+      'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 100%)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+    backdropFilter: 'blur(20px)',
   },
 };
 

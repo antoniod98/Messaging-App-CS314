@@ -64,22 +64,39 @@ const Landing = () => {
       {/* Hero Section */}
       <section style={styles.hero}>
         <div style={styles.heroContent}>
-          <h1 style={styles.heroTitle}>
-            Real-Time Communication,
-            <br />
-            <span style={styles.heroGradient}>Simplified</span>
-          </h1>
-          <p style={styles.heroSubtitle}>
-            Secure, instant messaging platform built for teams who value privacy and performance.
-            Connect, collaborate, and communicate in real-time.
-          </p>
-          <div style={styles.heroCTA}>
-            <button style={styles.primaryCTA} onClick={() => navigate('/register')}>
-              Start Messaging Free
-            </button>
-            <button style={styles.secondaryCTA} onClick={() => navigate('/login')}>
-              Sign In →
-            </button>
+          <div style={styles.heroGlassPanel}>
+            <div style={styles.heroEyebrow}>Private by Design</div>
+            <h1 style={styles.heroTitle}>
+              Real-Time Communication,
+              <br />
+              <span style={styles.heroGradient}>Simplified</span>
+            </h1>
+            <p style={styles.heroSubtitle}>
+              Secure, instant messaging platform built for teams who value privacy and performance.
+              Connect, collaborate, and communicate in real-time.
+            </p>
+            <div style={styles.heroCTA}>
+              <button style={styles.primaryCTA} onClick={() => navigate('/register')}>
+                Start Messaging Free
+              </button>
+              <button style={styles.secondaryCTA} onClick={() => navigate('/login')}>
+                Sign In →
+              </button>
+            </div>
+            <div style={styles.heroStats}>
+              <div style={styles.heroStatCard}>
+                <span style={styles.heroStatValue}>24/7</span>
+                <span style={styles.heroStatLabel}>Live syncing</span>
+              </div>
+              <div style={styles.heroStatCard}>
+                <span style={styles.heroStatValue}>E2E</span>
+                <span style={styles.heroStatLabel}>Encrypted channels</span>
+              </div>
+              <div style={styles.heroStatCard}>
+                <span style={styles.heroStatValue}>1 tap</span>
+                <span style={styles.heroStatLabel}>Team access</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -162,7 +179,8 @@ const Landing = () => {
 const styles = {
   container: {
     minHeight: '100vh',
-    backgroundColor: '#0a0a0a',
+    background:
+      'radial-gradient(circle at top left, rgba(110, 168, 254, 0.16) 0%, transparent 32%), radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.09) 0%, transparent 28%), linear-gradient(180deg, #06070b 0%, #0b1020 48%, #090a0d 100%)',
     color: '#ffffff',
     position: 'relative',
     overflow: 'hidden',
@@ -216,21 +234,25 @@ const styles = {
   // Navigation
   nav: {
     position: 'fixed',
-    top: 0,
+    top: '18px',
     left: 0,
     right: 0,
     zIndex: 100,
-    backgroundColor: 'rgba(10, 10, 10, 0.8)',
-    backdropFilter: 'blur(10px)',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'transparent',
   },
   navContent: {
     maxWidth: '1200px',
     margin: '0 auto',
-    padding: '20px 40px',
+    padding: 'clamp(14px, 2.4vw, 18px) clamp(16px, 4vw, 28px)',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)',
+    backdropFilter: 'blur(22px)',
+    WebkitBackdropFilter: 'blur(22px)',
+    border: '1px solid rgba(255, 255, 255, 0.16)',
+    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)',
+    borderRadius: '22px',
   },
   logo: {
     fontSize: '24px',
@@ -241,28 +263,32 @@ const styles = {
   navButtons: {
     display: 'flex',
     gap: '16px',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
   },
   loginBtn: {
     padding: '10px 24px',
     fontSize: '14px',
     fontWeight: '600',
     color: '#ffffff',
-    backgroundColor: 'transparent',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    borderRadius: '6px',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.16)',
+    borderRadius: '999px',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
+    backdropFilter: 'blur(14px)',
   },
   signupBtn: {
     padding: '10px 24px',
     fontSize: '14px',
     fontWeight: '600',
-    color: '#0a0a0a',
-    backgroundColor: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
+    color: '#ffffff',
+    background: 'linear-gradient(135deg, rgba(129, 193, 255, 0.9) 0%, rgba(72, 125, 255, 0.85) 100%)',
+    border: '1px solid rgba(255, 255, 255, 0.18)',
+    borderRadius: '999px',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
+    boxShadow: '0 14px 32px rgba(72, 125, 255, 0.28)',
   },
 
   // Hero Section
@@ -272,16 +298,40 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    padding: '100px 40px 40px',
+    padding: '140px clamp(18px, 4vw, 40px) 56px',
   },
   heroContent: {
-    maxWidth: '800px',
+    maxWidth: '920px',
+    width: '100%',
     textAlign: 'center',
     position: 'relative',
     zIndex: 10,
   },
+  heroGlassPanel: {
+    padding: 'clamp(28px, 5vw, 56px) clamp(20px, 5vw, 52px)',
+    borderRadius: '32px',
+    background:
+      'linear-gradient(135deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 45%, rgba(255,255,255,0.03) 100%)',
+    border: '1px solid rgba(255, 255, 255, 0.16)',
+    boxShadow: '0 30px 90px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255,255,255,0.16)',
+    backdropFilter: 'blur(26px)',
+    WebkitBackdropFilter: 'blur(26px)',
+  },
+  heroEyebrow: {
+    display: 'inline-flex',
+    padding: '8px 14px',
+    marginBottom: '24px',
+    borderRadius: '999px',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    border: '1px solid rgba(255, 255, 255, 0.14)',
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: '12px',
+    fontWeight: '700',
+    letterSpacing: '1.2px',
+    textTransform: 'uppercase',
+  },
   heroTitle: {
-    fontSize: '64px',
+    fontSize: 'clamp(38px, 8vw, 64px)',
     fontWeight: '700',
     lineHeight: '1.1',
     marginBottom: '24px',
@@ -294,9 +344,9 @@ const styles = {
     backgroundClip: 'text',
   },
   heroSubtitle: {
-    fontSize: '20px',
+    fontSize: 'clamp(16px, 2.8vw, 20px)',
     lineHeight: '1.6',
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(255, 255, 255, 0.76)',
     marginBottom: '48px',
     maxWidth: '600px',
     margin: '0 auto 48px',
@@ -311,24 +361,51 @@ const styles = {
     padding: '16px 32px',
     fontSize: '16px',
     fontWeight: '600',
-    color: '#0a0a0a',
-    backgroundColor: '#ffffff',
-    border: 'none',
-    borderRadius: '8px',
+    color: '#ffffff',
+    background: 'linear-gradient(135deg, rgba(129, 193, 255, 0.95) 0%, rgba(72, 125, 255, 0.9) 100%)',
+    border: '1px solid rgba(255, 255, 255, 0.14)',
+    borderRadius: '999px',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
-    boxShadow: '0 4px 20px rgba(255, 255, 255, 0.2)',
+    boxShadow: '0 18px 40px rgba(72, 125, 255, 0.3)',
+    minWidth: '220px',
   },
   secondaryCTA: {
     padding: '16px 32px',
     fontSize: '16px',
     fontWeight: '600',
     color: '#ffffff',
-    backgroundColor: 'transparent',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    borderRadius: '8px',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    border: '1px solid rgba(255, 255, 255, 0.16)',
+    borderRadius: '999px',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
+    backdropFilter: 'blur(12px)',
+    minWidth: '220px',
+  },
+  heroStats: {
+    marginTop: '40px',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+    gap: '14px',
+  },
+  heroStatCard: {
+    padding: '18px 16px',
+    borderRadius: '18px',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  heroStatValue: {
+    fontSize: '24px',
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  heroStatLabel: {
+    fontSize: '13px',
+    color: 'rgba(255, 255, 255, 0.62)',
   },
 
   // Animated Grid
@@ -352,42 +429,47 @@ const styles = {
 
   // Features Section
   features: {
-    padding: '120px 40px',
-    backgroundColor: '#111111',
+    padding: 'clamp(84px, 10vw, 120px) clamp(18px, 4vw, 40px)',
+    backgroundColor: 'rgba(10, 12, 18, 0.55)',
     position: 'relative',
     zIndex: 10,
+    backdropFilter: 'blur(18px)',
   },
   featuresContent: {
     maxWidth: '1200px',
     margin: '0 auto',
   },
   sectionTitle: {
-    fontSize: '48px',
+    fontSize: 'clamp(32px, 6vw, 48px)',
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: '80px',
+    marginBottom: 'clamp(40px, 7vw, 80px)',
     letterSpacing: '-1px',
   },
   featureGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '40px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: 'clamp(18px, 4vw, 40px)',
   },
   featureCard: {
-    padding: '40px',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: '12px',
+    padding: 'clamp(24px, 4vw, 40px)',
+    background:
+      'linear-gradient(145deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 52%, rgba(255,255,255,0.03) 100%)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: '24px',
     transition: 'all 0.3s ease',
     position: 'relative',
     overflow: 'hidden',
+    backdropFilter: 'blur(18px)',
+    WebkitBackdropFilter: 'blur(18px)',
+    boxShadow: '0 18px 40px rgba(0, 0, 0, 0.18)',
   },
   featureCardHover: {
     transform: 'translateY(-10px)',
-    border: '1px solid rgba(255, 255, 255, 0.24)',
+    border: '1px solid rgba(166, 210, 255, 0.28)',
     background:
-      'linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 100%)',
-    boxShadow: '0 20px 45px rgba(0, 0, 0, 0.35)',
+      'linear-gradient(180deg, rgba(160, 205, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%)',
+    boxShadow: '0 24px 60px rgba(10, 20, 50, 0.35)',
   },
   featureIcon: {
     fontSize: '48px',
@@ -417,8 +499,8 @@ const styles = {
 
   // CTA Section
   ctaSection: {
-    padding: '120px 40px',
-    backgroundColor: '#0a0a0a',
+    padding: 'clamp(84px, 10vw, 120px) clamp(18px, 4vw, 40px)',
+    backgroundColor: 'transparent',
     textAlign: 'center',
     position: 'relative',
     zIndex: 10,
@@ -426,15 +508,23 @@ const styles = {
   ctaContent: {
     maxWidth: '600px',
     margin: '0 auto',
+    padding: 'clamp(30px, 5vw, 52px) clamp(20px, 5vw, 42px)',
+    borderRadius: '30px',
+    background:
+      'linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.05) 100%)',
+    border: '1px solid rgba(255, 255, 255, 0.14)',
+    boxShadow: '0 28px 70px rgba(0, 0, 0, 0.26)',
+    backdropFilter: 'blur(24px)',
+    WebkitBackdropFilter: 'blur(24px)',
   },
   ctaTitle: {
-    fontSize: '48px',
+    fontSize: 'clamp(32px, 6vw, 48px)',
     fontWeight: '700',
     marginBottom: '16px',
     letterSpacing: '-1px',
   },
   ctaSubtitle: {
-    fontSize: '20px',
+    fontSize: 'clamp(16px, 2.8vw, 20px)',
     color: 'rgba(255, 255, 255, 0.6)',
     marginBottom: '40px',
   },
@@ -442,22 +532,23 @@ const styles = {
     padding: '18px 40px',
     fontSize: '18px',
     fontWeight: '600',
-    color: '#0a0a0a',
-    backgroundColor: '#ffffff',
-    border: 'none',
-    borderRadius: '8px',
+    color: '#ffffff',
+    background: 'linear-gradient(135deg, rgba(129, 193, 255, 0.95) 0%, rgba(72, 125, 255, 0.88) 100%)',
+    border: '1px solid rgba(255, 255, 255, 0.14)',
+    borderRadius: '999px',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
-    boxShadow: '0 4px 20px rgba(255, 255, 255, 0.2)',
+    boxShadow: '0 18px 42px rgba(72, 125, 255, 0.28)',
   },
 
   // Footer
   footer: {
-    padding: '60px 40px',
-    backgroundColor: '#111111',
-    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+    padding: 'clamp(44px, 6vw, 60px) clamp(18px, 4vw, 40px)',
+    backgroundColor: 'rgba(10, 12, 18, 0.52)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
     position: 'relative',
     zIndex: 10,
+    backdropFilter: 'blur(16px)',
   },
   footerContent: {
     maxWidth: '1200px',
@@ -477,4 +568,5 @@ const styles = {
 };
 
 export default Landing;
+
 
