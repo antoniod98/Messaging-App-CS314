@@ -8,11 +8,26 @@ const {
   saveRoomImageFromDataUrl,
 } = require('../utils/roomImage');
 
+const dedupeParticipants = (participants) => {
+  const seenParticipantIds = new Set();
+
+  return participants.filter((participant) => {
+    const participantId = (participant._id || participant.id).toString();
+    if (seenParticipantIds.has(participantId)) {
+      return false;
+    }
+
+    seenParticipantIds.add(participantId);
+    return true;
+  });
+};
+
 const serializeRoom = (req, room, currentUserId = null) => {
+  const uniqueParticipants = dedupeParticipants(room.participants);
   let displayName = room.name;
 
   if (room.isDM && currentUserId) {
-    const otherParticipant = room.participants.find(
+    const otherParticipant = uniqueParticipants.find(
       (participant) => participant._id.toString() !== currentUserId.toString()
     );
 
@@ -32,13 +47,13 @@ const serializeRoom = (req, room, currentUserId = null) => {
       lastName: room.creator.lastName,
       email: room.creator.email,
     },
-    participants: room.participants.map((participant) => ({
+    participants: uniqueParticipants.map((participant) => ({
       id: participant._id,
       firstName: participant.firstName,
       lastName: participant.lastName,
       email: participant.email,
     })),
-    participantCount: room.participants.length,
+    participantCount: uniqueParticipants.length,
     createdAt: room.createdAt,
   };
 };
@@ -78,7 +93,8 @@ router.post('/dm', authenticate, async (req, res) => {
     const dm = await ChatRoom.findOrCreateDM(currentUserId, otherUserId);
 
     // get the other participant (not the current user)
-    const otherParticipant = dm.participants.find(
+    const uniqueParticipants = dedupeParticipants(dm.participants);
+    const otherParticipant = uniqueParticipants.find(
       (p) => p._id.toString() !== currentUserId.toString()
     );
 
@@ -92,13 +108,13 @@ router.post('/dm', authenticate, async (req, res) => {
         creator: {
           id: dm.creator,
         },
-        participants: dm.participants.map((p) => ({
+        participants: uniqueParticipants.map((p) => ({
           id: p._id,
           firstName: p.firstName,
           lastName: p.lastName,
           email: p.email,
         })),
-        participantCount: dm.participants.length,
+        participantCount: uniqueParticipants.length,
         createdAt: dm.createdAt,
       },
     });
