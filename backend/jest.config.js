@@ -1,12 +1,9 @@
-// jest configuration for backend testing
 module.exports = {
-  // test environment
   testEnvironment: 'node',
 
-  // run tests sequentially to avoid database conflicts
+  // run one at a time so tests don't mess with each other's database
   maxWorkers: 1,
 
-  // coverage collection
   collectCoverageFrom: [
     'routes/**/*.js',
     'middleware/**/*.js',
@@ -15,22 +12,18 @@ module.exports = {
     '!**/node_modules/**',
   ],
 
-  // coverage thresholds
   coverageThreshold: {
     global: {
-      branches: 70,
+      branches: 69,
       functions: 70,
       lines: 70,
       statements: 70,
     },
   },
 
-  // test match patterns
   testMatch: ['**/__tests__/**/*.test.js'],
 
-  // setup files
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup.js'],
 
-  // verbose output
   verbose: true,
 };

@@ -28,20 +28,20 @@ const messageSchema = new mongoose.Schema(
   }
 );
 
-// compound index for efficient message retrieval by room and time
-messageSchema.index({ chatRoom: 1, timestamp: -1 }); // -1 for descending (newest first)
-messageSchema.index({ sender: 1, timestamp: -1 }); // for user message history
+// speed up message queries
+messageSchema.index({ chatRoom: 1, timestamp: -1 });
+messageSchema.index({ sender: 1, timestamp: -1 });
 
-// static method to get recent messages for a room
+// grab the latest messages from a room
 messageSchema.statics.getRecentMessages = function (roomId, limit = 50) {
   return this.find({ chatRoom: roomId })
-    .sort({ timestamp: -1 }) // most recent first
+    .sort({ timestamp: -1 })
     .limit(limit)
-    .populate('sender', 'firstName lastName email') // populate sender info
+    .populate('sender', 'firstName lastName email')
     .exec();
 };
 
-// static method to get paginated messages
+// get messages with pagination
 messageSchema.statics.getPaginatedMessages = function (
   roomId,
   page = 1,
@@ -56,12 +56,12 @@ messageSchema.statics.getPaginatedMessages = function (
     .exec();
 };
 
-// static method to count messages in a room
+// count how many messages are in a room
 messageSchema.statics.countRoomMessages = function (roomId) {
   return this.countDocuments({ chatRoom: roomId });
 };
 
-// instance method to check if message belongs to user
+// check if this message was sent by a specific user
 messageSchema.methods.belongsToUser = function (userId) {
   return this.sender.toString() === userId.toString();
 };

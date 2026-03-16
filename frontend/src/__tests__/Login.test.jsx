@@ -51,10 +51,10 @@ describe('Login Component', () => {
     renderLogin();
 
     expect(screen.getByText('Welcome Back')).toBeInTheDocument();
-    expect(screen.getByText('Login to your account')).toBeInTheDocument();
-    expect(screen.getByLabelText('Email')).toBeInTheDocument();
+    expect(screen.getByText(/Sign in to continue to your account/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Email Address')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
     expect(screen.getByText(/Don't have an account?/i)).toBeInTheDocument();
   });
 
@@ -62,7 +62,7 @@ describe('Login Component', () => {
   it('should show error when email is empty', async () => {
     renderLogin();
 
-    const submitButton = screen.getByRole('button', { name: /login/i });
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -74,10 +74,10 @@ describe('Login Component', () => {
   it('should show error when password is empty', async () => {
     renderLogin();
 
-    const emailInput = screen.getByLabelText('Email');
+    const emailInput = screen.getByLabelText('Email Address');
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
 
-    const submitButton = screen.getByRole('button', { name: /login/i });
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -89,7 +89,7 @@ describe('Login Component', () => {
   it('should update form fields on user input', () => {
     renderLogin();
 
-    const emailInput = screen.getByLabelText('Email');
+    const emailInput = screen.getByLabelText('Email Address');
     const passwordInput = screen.getByLabelText('Password');
 
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
@@ -103,14 +103,14 @@ describe('Login Component', () => {
   it('should clear field errors when user starts typing', async () => {
     renderLogin();
 
-    const submitButton = screen.getByRole('button', { name: /login/i });
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
       expect(screen.getByText('Email is required')).toBeInTheDocument();
     });
 
-    const emailInput = screen.getByLabelText('Email');
+    const emailInput = screen.getByLabelText('Email Address');
     fireEvent.change(emailInput, { target: { value: 't' } });
 
     await waitFor(() => {
@@ -122,7 +122,7 @@ describe('Login Component', () => {
   it('should have link to registration page', () => {
     renderLogin();
 
-    const registerLink = screen.getByRole('link', { name: /register here/i });
+    const registerLink = screen.getByRole('link', { name: /create account/i });
     expect(registerLink).toBeInTheDocument();
     expect(registerLink).toHaveAttribute('href', '/register');
   });
@@ -131,7 +131,7 @@ describe('Login Component', () => {
   it('should have email input with correct type', () => {
     renderLogin();
 
-    const emailInput = screen.getByLabelText('Email');
+    const emailInput = screen.getByLabelText('Email Address');
     expect(emailInput).toHaveAttribute('type', 'email');
     expect(emailInput).toHaveAttribute('autocomplete', 'email');
   });
@@ -149,7 +149,7 @@ describe('Login Component', () => {
   it('should safely render error messages without XSS', async () => {
     renderLogin();
 
-    const submitButton = screen.getByRole('button', { name: /login/i });
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -163,7 +163,7 @@ describe('Login Component', () => {
   it('should disable form inputs during submission', () => {
     renderLogin();
 
-    const emailInput = screen.getByLabelText('Email');
+    const emailInput = screen.getByLabelText('Email Address');
     const passwordInput = screen.getByLabelText('Password');
 
     expect(emailInput).not.toBeDisabled();
@@ -174,7 +174,7 @@ describe('Login Component', () => {
   it('should prevent default form submission behavior', () => {
     renderLogin();
 
-    const form = screen.getByRole('button', { name: /login/i }).closest('form');
+    const form = screen.getByRole('button', { name: /sign in/i }).closest('form');
     const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
     const preventDefault = vi.fn();
     submitEvent.preventDefault = preventDefault;
