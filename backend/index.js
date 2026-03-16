@@ -3,18 +3,21 @@ const http = require('http');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const compression = require('compression');
 const path = require('path');
 require('dotenv').config();
 
 const app = express();
 const httpServer = http.createServer(app);
 
-// middleware
+// compression helps reduce response sizes
+app.use(compression());
+
 app.use(cors({
   origin: function(origin, callback) {
-    // allow requests with no origin (like mobile apps or curl)
+    // mobile apps and tools like curl don't send an origin header
     if (!origin) return callback(null, true);
-    // allow any localhost origin
+    // dev environment - allow any localhost
     if (origin.startsWith('http://localhost:')) {
       return callback(null, true);
     }
@@ -24,11 +27,20 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); // parse cookies for JWT authentication
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(cookieParser());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  maxAge: '1d',
+  etag: true,
+}));
 
-// MongoDB connection
-mongoose.connect(process.env.DATABASE_URI)
+// setup mongoose options
+mongoose.set('strictQuery', false);
+mongoose.connect(process.env.DATABASE_URI, {
+  maxPoolSize: 10,
+  minPoolSize: 2,
+  socketTimeoutMS: 45000,
+  serverSelectionTimeoutMS: 5000,
+})
 .then(() => console.log('✅ MongoDB Connected'))
 .catch((err) => {
   console.error('❌ MongoDB connection error:', err.message);
@@ -39,33 +51,27 @@ mongoose.connect(process.env.DATABASE_URI)
   console.log('   - wait a few minutes for DNS propagation');
 });
 
-// import routes
 const authRoutes = require('./routes/auth');
 const roomRoutes = require('./routes/rooms');
 const messageRoutes = require('./routes/messages');
 const userRoutes = require('./routes/users');
 
-// initialize Socket.IO
 const { initializeSocket } = require('./socket');
 const io = initializeSocket(httpServer);
 
-// basic test route
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the MERN Stack API!' });
 });
 
-// test route for frontend to connect to
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is working!' });
 });
 
-// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/users', userRoutes);
 
-// start server with Socket.IO support
 const PORT = process.env.PORT || 8747;
 httpServer.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

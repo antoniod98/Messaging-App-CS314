@@ -265,4 +265,15 @@ describe('Authentication Routes', () => {
       expect(response.body.success).toBe(false);
     });
   });
+
+  describe('POST /api/auth/logout', () => {
+    it('should successfully logout user', async () => {
+      const response = await request(app)
+        .post('/api/auth/logout')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toContain('Logged out');
+    });
+  });
 });

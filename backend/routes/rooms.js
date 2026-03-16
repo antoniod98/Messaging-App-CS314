@@ -64,6 +64,8 @@ router.post('/dm', authenticate, async (req, res) => {
     const { userId: otherUserId } = req.body;
     const currentUserId = req.user.userId;
 
+    console.log('DM request:', { currentUserId, otherUserId });
+
     // validation: check if other user ID is provided
     if (!otherUserId) {
       return res.status(400).json({
@@ -90,7 +92,12 @@ router.post('/dm', authenticate, async (req, res) => {
     }
 
     // find or create DM
-    const dm = await ChatRoom.findOrCreateDM(currentUserId, otherUserId);
+    let dm = await ChatRoom.findOrCreateDM(currentUserId, otherUserId);
+
+    // populate participants if not already populated
+    if (!dm.populated('participants')) {
+      dm = await dm.populate('participants', 'firstName lastName email');
+    }
 
     // get the other participant (not the current user)
     const uniqueParticipants = dedupeParticipants(dm.participants);
@@ -120,6 +127,11 @@ router.post('/dm', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('Create DM error:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    });
 
     if (error.name === 'CastError') {
       return res.status(400).json({
@@ -131,6 +143,7 @@ router.post('/dm', authenticate, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while creating direct message',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 });
@@ -585,17 +598,21 @@ router.get('/:roomId/messages', authenticate, async (req, res) => {
       });
     }
 
-    // verify chat room exists
-    const chatRoom = await ChatRoom.findById(roomId);
-    if (!chatRoom) {
-      return res.status(404).json({
-        success: false,
-        message: 'Chat room not found',
-      });
-    }
+    // verify chat room exists and user is a participant (optimized single query)
+    const chatRoom = await ChatRoom.findOne({
+      _id: roomId,
+      participants: userId,
+    }).lean();
 
-    // verify user is a participant of the chat room
-    if (!chatRoom.hasParticipant(userId)) {
+    if (!chatRoom) {
+      // check if room exists at all or user is just not a participant
+      const roomExists = await ChatRoom.exists({ _id: roomId });
+      if (!roomExists) {
+        return res.status(404).json({
+          success: false,
+          message: 'Chat room not found',
+        });
+      }
       return res.status(403).json({
         success: false,
         message: 'You are not a participant of this chat room',

@@ -52,19 +52,19 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// index for faster email lookups during authentication
+// makes login faster
 userSchema.index({ email: 1 });
 
-// virtual property to get full name
+// convenient way to get someone's full name
 userSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
-// ensure virtual fields are included when converting to JSON
+// make sure we never accidentally send passwords to the client
 userSchema.set('toJSON', {
   virtuals: true,
   transform: function (doc, ret) {
-    delete ret.password; // never expose password in JSON responses
+    delete ret.password;
     return ret;
   },
 });

@@ -1,23 +1,21 @@
 const { verifyToken } = require('../utils/auth');
 const { User } = require('../models');
 
-// middleware to verify JWT token and authenticate user
-// protects routes that require authentication
-// expected token format: Cookie: jwt=<token> OR Header: Authorization: Bearer <token>
+// checks if user is logged in before letting them access a route
+// looks for JWT in cookies or Authorization header
 const authenticate = async (req, res, next) => {
   try {
     let token = null;
 
-    // check cookie first (recommended for web apps)
+    // try cookie first
     if (req.cookies && req.cookies.jwt) {
       token = req.cookies.jwt;
     }
-    // fallback to authorization header
+    // otherwise check auth header
     else if (req.headers.authorization?.startsWith('Bearer ')) {
       token = req.headers.authorization.split(' ')[1];
     }
 
-    // no token found
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -25,10 +23,7 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    // verify token
     const decoded = verifyToken(token);
-
-    // find user by ID from token
     const user = await User.findById(decoded.userId);
 
     if (!user) {
@@ -38,7 +33,7 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    // attach user to request object for use in route handlers
+    // stick user info on the request so routes can use it
     req.user = {
       userId: user._id,
       email: user.email,
@@ -46,9 +41,8 @@ const authenticate = async (req, res, next) => {
       lastName: user.lastName,
     };
 
-    next(); // proceed to the next middleware/route handler
+    next();
   } catch (error) {
-    // handle token errors
     if (error.message === 'Token has expired') {
       return res.status(401).json({
         success: false,
@@ -63,7 +57,6 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    // generic server error
     console.error('Authentication error:', error);
     return res.status(500).json({
       success: false,
@@ -72,9 +65,8 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-// optional middleware to attach user info if token exists
-// does not block request if no token (unlike authenticate)
-// useful for routes that work for both authenticated and non-authenticated users
+// like authenticate but doesn't block the request if there's no token
+// useful for pages that work differently when you're logged in vs not
 const optionalAuth = async (req, res, next) => {
   try {
     let token = null;
@@ -99,9 +91,9 @@ const optionalAuth = async (req, res, next) => {
       }
     }
 
-    next(); // always proceed, even without token
+    next();
   } catch (error) {
-    // silently fail for optional auth
+    // just let them through even if token is bad
     next();
   }
 };

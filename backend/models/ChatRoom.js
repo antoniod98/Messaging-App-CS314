@@ -42,13 +42,13 @@ const chatRoomSchema = new mongoose.Schema(
   }
 );
 
-// indexes for performance
-chatRoomSchema.index({ name: 1 }); // fast room name lookups
-chatRoomSchema.index({ creator: 1 }); // fast lookup of rooms created by user
-chatRoomSchema.index({ participants: 1 }); // fast lookup of rooms user belongs to
-chatRoomSchema.index({ isDM: 1, participants: 1 }); // fast lookup of DMs between users
+// indexes to speed up common queries
+chatRoomSchema.index({ name: 1 });
+chatRoomSchema.index({ creator: 1 });
+chatRoomSchema.index({ participants: 1 });
+chatRoomSchema.index({ isDM: 1, participants: 1 });
 
-// pre-save middleware: ensure creator is present and participant IDs stay unique
+// make sure creator is always in participants and no duplicates
 chatRoomSchema.pre('save', function () {
   const normalizedParticipants = [];
   const seenParticipantIds = new Set();
@@ -69,14 +69,16 @@ chatRoomSchema.pre('save', function () {
   this.participants = normalizedParticipants;
 });
 
-// instance method to check if user is participant
+// check if a user is in this room
 chatRoomSchema.methods.hasParticipant = function (userId) {
-  return this.participants.some(
-    (participant) => participant.toString() === userId.toString()
-  );
+  return this.participants.some((participant) => {
+    // participant might be a full User object or just an ID
+    const participantId = participant._id || participant;
+    return participantId.toString() === userId.toString();
+  });
 };
 
-// instance method to add participant
+// add someone to the room
 chatRoomSchema.methods.addParticipant = function (userId) {
   if (!this.hasParticipant(userId)) {
     this.participants.push(userId);
@@ -84,7 +86,7 @@ chatRoomSchema.methods.addParticipant = function (userId) {
   return this.save();
 };
 
-// instance method to remove participant
+// kick someone out
 chatRoomSchema.methods.removeParticipant = function (userId) {
   this.participants = this.participants.filter(
     (participant) => participant.toString() !== userId.toString()
@@ -92,12 +94,12 @@ chatRoomSchema.methods.removeParticipant = function (userId) {
   return this.save();
 };
 
-// static method to find or create a direct message between two users
+// find existing DM or create a new one
 chatRoomSchema.statics.findOrCreateDM = async function (userId1, userId2) {
-  // normalize user IDs to ensure consistent ordering
+  // sort IDs so the lookup is consistent regardless of who initiates
   const userIds = [userId1.toString(), userId2.toString()].sort();
 
-  // check if DM already exists between these two users
+  // see if these two already have a DM
   const existingDM = await this.findOne({
     isDM: true,
     participants: { $all: userIds, $size: 2 },
@@ -107,7 +109,7 @@ chatRoomSchema.statics.findOrCreateDM = async function (userId1, userId2) {
     return existingDM;
   }
 
-  // create new DM
+  // nope, make a new one
   const newDM = await this.create({
     isDM: true,
     creator: userId1,

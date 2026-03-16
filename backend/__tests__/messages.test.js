@@ -233,6 +233,23 @@ describe('Message Routes', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.message.content).toBeDefined();
     });
+
+    // unit test: validation - invalid chatRoomId format
+    it('should reject message with invalid chatRoomId format', async () => {
+      const { token } = await createUser();
+
+      const response = await request(app)
+        .post('/api/messages')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          content: 'Test message',
+          chatRoomId: 'invalid-id',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Invalid');
+    });
   });
 
   describe('GET /api/rooms/:roomId/messages', () => {
