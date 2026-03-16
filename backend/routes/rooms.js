@@ -2,6 +2,61 @@ const express = require('express');
 const router = express.Router();
 const { ChatRoom, Message, User } = require('../models');
 const { authenticate } = require('../middleware/auth');
+const {
+  deleteRoomImage,
+  getRoomImageUrl,
+  saveRoomImageFromDataUrl,
+} = require('../utils/roomImage');
+
+const dedupeParticipants = (participants) => {
+  const seenParticipantIds = new Set();
+
+  return participants.filter((participant) => {
+    const participantId = (participant._id || participant.id).toString();
+    if (seenParticipantIds.has(participantId)) {
+      return false;
+    }
+
+    seenParticipantIds.add(participantId);
+    return true;
+  });
+};
+
+const serializeRoom = (req, room, currentUserId = null) => {
+  const uniqueParticipants = dedupeParticipants(room.participants);
+  let displayName = room.name;
+
+  if (room.isDM && currentUserId) {
+    const otherParticipant = uniqueParticipants.find(
+      (participant) => participant._id.toString() !== currentUserId.toString()
+    );
+
+    if (otherParticipant) {
+      displayName = `${otherParticipant.firstName} ${otherParticipant.lastName}`;
+    }
+  }
+
+  return {
+    id: room._id,
+    name: displayName,
+    isDM: room.isDM || false,
+    roomImageUrl: room.isDM ? null : getRoomImageUrl(req, room.imagePath),
+    creator: {
+      id: room.creator._id || room.creator,
+      firstName: room.creator.firstName,
+      lastName: room.creator.lastName,
+      email: room.creator.email,
+    },
+    participants: uniqueParticipants.map((participant) => ({
+      id: participant._id,
+      firstName: participant.firstName,
+      lastName: participant.lastName,
+      email: participant.email,
+    })),
+    participantCount: uniqueParticipants.length,
+    createdAt: room.createdAt,
+  };
+};
 
 // POST /api/rooms/dm - create or get direct message with another user (protected route)
 router.post('/dm', authenticate, async (req, res) => {
@@ -38,7 +93,8 @@ router.post('/dm', authenticate, async (req, res) => {
     const dm = await ChatRoom.findOrCreateDM(currentUserId, otherUserId);
 
     // get the other participant (not the current user)
-    const otherParticipant = dm.participants.find(
+    const uniqueParticipants = dedupeParticipants(dm.participants);
+    const otherParticipant = uniqueParticipants.find(
       (p) => p._id.toString() !== currentUserId.toString()
     );
 
@@ -52,13 +108,13 @@ router.post('/dm', authenticate, async (req, res) => {
         creator: {
           id: dm.creator,
         },
-        participants: dm.participants.map((p) => ({
+        participants: uniqueParticipants.map((p) => ({
           id: p._id,
           firstName: p.firstName,
           lastName: p.lastName,
           email: p.email,
         })),
-        participantCount: dm.participants.length,
+        participantCount: uniqueParticipants.length,
         createdAt: dm.createdAt,
       },
     });
@@ -81,8 +137,10 @@ router.post('/dm', authenticate, async (req, res) => {
 
 // POST /api/rooms - create a new chat room (protected route)
 router.post('/', authenticate, async (req, res) => {
+  let savedRoomImagePath = null;
+
   try {
-    const { name } = req.body;
+    const { name, roomImage } = req.body;
     const userId = req.user.userId;
 
     // validation: check if room name is provided
@@ -110,9 +168,14 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
+    if (roomImage) {
+      savedRoomImagePath = await saveRoomImageFromDataUrl(roomImage);
+    }
+
     // create new chat room with authenticated user as creator
     const newRoom = new ChatRoom({
       name: name.trim(),
+      imagePath: savedRoomImagePath,
       creator: userId,
       participants: [userId], // creator is automatically a participant
     });
@@ -126,26 +189,14 @@ router.post('/', authenticate, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Chat room created successfully',
-      room: {
-        id: newRoom._id,
-        name: newRoom.name,
-        creator: {
-          id: newRoom.creator._id,
-          firstName: newRoom.creator.firstName,
-          lastName: newRoom.creator.lastName,
-          email: newRoom.creator.email,
-        },
-        participants: newRoom.participants.map((p) => ({
-          id: p._id,
-          firstName: p.firstName,
-          lastName: p.lastName,
-          email: p.email,
-        })),
-        createdAt: newRoom.createdAt,
-      },
+      room: serializeRoom(req, newRoom, userId),
     });
   } catch (error) {
     console.error('Create room error:', error);
+
+    if (savedRoomImagePath) {
+      await deleteRoomImage(savedRoomImagePath);
+    }
 
     // handle Mongoose validation errors
     if (error.name === 'ValidationError') {
@@ -176,38 +227,7 @@ router.get('/', authenticate, async (req, res) => {
 
     res.status(200).json({
       success: true,
-      rooms: rooms.map((room) => {
-        // for DMs, use the other participant's name
-        let displayName = room.name;
-        if (room.isDM) {
-          const otherParticipant = room.participants.find(
-            (p) => p._id.toString() !== userId.toString()
-          );
-          if (otherParticipant) {
-            displayName = `${otherParticipant.firstName} ${otherParticipant.lastName}`;
-          }
-        }
-
-        return {
-          id: room._id,
-          name: displayName,
-          isDM: room.isDM || false,
-          creator: {
-            id: room.creator._id,
-            firstName: room.creator.firstName,
-            lastName: room.creator.lastName,
-            email: room.creator.email,
-          },
-          participants: room.participants.map((p) => ({
-            id: p._id,
-            firstName: p.firstName,
-            lastName: p.lastName,
-            email: p.email,
-          })),
-          participantCount: room.participants.length,
-          createdAt: room.createdAt,
-        };
-      }),
+      rooms: rooms.map((room) => serializeRoom(req, room, userId)),
     });
   } catch (error) {
     console.error('Get rooms error:', error);
@@ -245,24 +265,7 @@ router.get('/:id', authenticate, async (req, res) => {
 
     res.status(200).json({
       success: true,
-      room: {
-        id: room._id,
-        name: room.name,
-        creator: {
-          id: room.creator._id,
-          firstName: room.creator.firstName,
-          lastName: room.creator.lastName,
-          email: room.creator.email,
-        },
-        participants: room.participants.map((p) => ({
-          id: p._id,
-          firstName: p.firstName,
-          lastName: p.lastName,
-          email: p.email,
-        })),
-        participantCount: room.participants.length,
-        createdAt: room.createdAt,
-      },
+      room: serializeRoom(req, room, userId),
     });
   } catch (error) {
     console.error('Get room details error:', error);
@@ -307,6 +310,7 @@ router.delete('/:id', authenticate, async (req, res) => {
 
     // delete all messages in this room (cascade delete)
     await Message.deleteMany({ chatRoom: id });
+    await deleteRoomImage(room.imagePath);
 
     // delete the room
     await ChatRoom.findByIdAndDelete(id);
@@ -410,6 +414,91 @@ router.post('/:id/participants', authenticate, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while adding participant',
+    });
+  }
+});
+
+// PUT /api/rooms/:id/image - update a room image (protected route, creator only)
+router.put('/:id/image', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { roomImage, removeRoomImage } = req.body;
+    const userId = req.user.userId;
+
+    const room = await ChatRoom.findById(id)
+      .populate('creator', 'firstName lastName email')
+      .populate('participants', 'firstName lastName email');
+
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat room not found',
+      });
+    }
+
+    if (room.isDM) {
+      return res.status(400).json({
+        success: false,
+        message: 'Direct messages do not support room images',
+      });
+    }
+
+    if (room.creator._id.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only the room creator can update the room image',
+      });
+    }
+
+    if (!roomImage && !removeRoomImage) {
+      return res.status(400).json({
+        success: false,
+        message: 'A new room image or remove request is required',
+      });
+    }
+
+    if (removeRoomImage) {
+      await deleteRoomImage(room.imagePath);
+      room.imagePath = null;
+    }
+
+    if (roomImage) {
+      const previousImagePath = room.imagePath;
+      const nextImagePath = await saveRoomImageFromDataUrl(roomImage);
+      room.imagePath = nextImagePath;
+
+      if (previousImagePath && previousImagePath !== nextImagePath) {
+        await deleteRoomImage(previousImagePath);
+      }
+    }
+
+    await room.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Room image updated successfully',
+      room: serializeRoom(req, room, userId),
+    });
+  } catch (error) {
+    console.error('Update room image error:', error);
+
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid room ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error while updating room image',
     });
   }
 });

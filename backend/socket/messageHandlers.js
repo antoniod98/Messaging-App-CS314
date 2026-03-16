@@ -1,4 +1,5 @@
 const { ChatRoom, Message } = require('../models');
+const { getProfileImageUrl } = require('../utils/profileImage');
 
 // register all message-related socket event handlers
 function messageHandlers(io, socket) {
@@ -114,7 +115,7 @@ function messageHandlers(io, socket) {
       await newMessage.save();
 
       // populate sender details
-      await newMessage.populate('sender', 'firstName lastName email');
+      await newMessage.populate('sender', 'firstName lastName email profileImagePath');
 
       // prepare message object for broadcast
       const messageData = {
@@ -125,6 +126,18 @@ function messageHandlers(io, socket) {
           firstName: newMessage.sender.firstName,
           lastName: newMessage.sender.lastName,
           email: newMessage.sender.email,
+          profileImageUrl: getProfileImageUrl(
+            {
+              protocol: socket.handshake.headers.origin?.startsWith('https') ? 'https' : 'http',
+              get: (headerName) => {
+                if (headerName === 'host') {
+                  return socket.handshake.headers.host;
+                }
+                return undefined;
+              },
+            },
+            newMessage.sender.profileImagePath
+          ),
         },
         chatRoom: newMessage.chatRoom,
         timestamp: newMessage.timestamp,

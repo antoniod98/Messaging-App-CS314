@@ -230,7 +230,8 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'center',
     minHeight: '100vh',
-    backgroundColor: '#0a0a0a',
+    background:
+      'radial-gradient(circle at top left, rgba(110, 168, 254, 0.16) 0%, transparent 34%), radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.08) 0%, transparent 30%), linear-gradient(180deg, #06070b 0%, #0b1020 48%, #090a0d 100%)',
     padding: '20px',
     position: 'relative',
     overflow: 'hidden',
@@ -264,24 +265,29 @@ const styles = {
     fontSize: '14px',
     fontWeight: '500',
     color: 'rgba(255, 255, 255, 0.7)',
-    backgroundColor: 'transparent',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: '6px',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.14)',
+    borderRadius: '999px',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
+    backdropFilter: 'blur(16px)',
   },
 
   // Card
   card: {
-    backgroundColor: '#1a1a1a',
+    background:
+      'linear-gradient(135deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 45%, rgba(255,255,255,0.03) 100%)',
     padding: '48px',
-    borderRadius: '16px',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '28px',
+    border: '1px solid rgba(255, 255, 255, 0.14)',
     width: '100%',
     maxWidth: '440px',
     position: 'relative',
     zIndex: 10,
     animation: 'fadeIn 0.5s ease-out',
+    backdropFilter: 'blur(26px)',
+    WebkitBackdropFilter: 'blur(26px)',
+    boxShadow: '0 30px 90px rgba(0, 0, 0, 0.32)',
   },
 
   logoContainer: {
@@ -296,8 +302,9 @@ const styles = {
     letterSpacing: '3px',
     color: '#ffffff',
     padding: '12px 24px',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    borderRadius: '8px',
+    border: '1px solid rgba(255, 255, 255, 0.16)',
+    borderRadius: '999px',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
 
   title: {
@@ -376,12 +383,13 @@ const styles = {
   input: {
     padding: '14px 16px',
     fontSize: '15px',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: '8px',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: '14px',
     outline: 'none',
     transition: 'all 0.2s ease',
-    backgroundColor: '#0a0a0a',
+    backgroundColor: 'rgba(10, 14, 24, 0.72)',
     color: '#ffffff',
+    backdropFilter: 'blur(12px)',
   },
 
   inputError: {
@@ -400,13 +408,14 @@ const styles = {
     padding: '16px',
     fontSize: '16px',
     fontWeight: '600',
-    color: '#0a0a0a',
-    backgroundColor: '#ffffff',
-    border: 'none',
-    borderRadius: '8px',
+    color: '#ffffff',
+    background: 'linear-gradient(135deg, rgba(129, 193, 255, 0.95) 0%, rgba(72, 125, 255, 0.88) 100%)',
+    border: '1px solid rgba(255, 255, 255, 0.14)',
+    borderRadius: '999px',
     cursor: 'pointer',
     marginTop: '8px',
     transition: 'all 0.3s ease',
+    boxShadow: '0 18px 40px rgba(72, 125, 255, 0.26)',
   },
 
   buttonDisabled: {
@@ -427,7 +436,7 @@ const styles = {
     padding: '0 16px',
     color: 'rgba(255, 255, 255, 0.3)',
     fontSize: '13px',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: 'rgba(20, 24, 36, 0.86)',
     zIndex: 1,
   },
 
@@ -451,12 +460,13 @@ const styles = {
     fontSize: '14px',
     fontWeight: '500',
     color: 'rgba(255, 255, 255, 0.7)',
-    backgroundColor: 'transparent',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: '8px',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: '999px',
     cursor: 'pointer',
     marginTop: '16px',
     transition: 'all 0.2s ease',
+    backdropFilter: 'blur(12px)',
   },
 };
 

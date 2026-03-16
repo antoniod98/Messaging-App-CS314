@@ -16,6 +16,11 @@ const chatRoomSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    imagePath: {
+      type: String,
+      default: null,
+      trim: true,
+    },
     creator: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -43,11 +48,25 @@ chatRoomSchema.index({ creator: 1 }); // fast lookup of rooms created by user
 chatRoomSchema.index({ participants: 1 }); // fast lookup of rooms user belongs to
 chatRoomSchema.index({ isDM: 1, participants: 1 }); // fast lookup of DMs between users
 
-// pre-save middleware: auto-add creator to participants if not already included
+// pre-save middleware: ensure creator is present and participant IDs stay unique
 chatRoomSchema.pre('save', function () {
-  if (!this.participants.includes(this.creator)) {
-    this.participants.push(this.creator);
+  const normalizedParticipants = [];
+  const seenParticipantIds = new Set();
+
+  this.participants.forEach((participant) => {
+    const participantId = participant.toString();
+    if (!seenParticipantIds.has(participantId)) {
+      seenParticipantIds.add(participantId);
+      normalizedParticipants.push(participant);
+    }
+  });
+
+  const creatorId = this.creator.toString();
+  if (!seenParticipantIds.has(creatorId)) {
+    normalizedParticipants.push(this.creator);
   }
+
+  this.participants = normalizedParticipants;
 });
 
 // instance method to check if user is participant

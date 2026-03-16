@@ -71,9 +71,11 @@ const styles = {
   },
   header: {
     padding: '12px 16px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-    backgroundColor: '#0a0a0a',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+    background:
+      'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)',
     boxShadow: '0 1px 0 rgba(0, 0, 0, 0.2)',
+    backdropFilter: 'blur(20px)',
   },
   roomName: {
     margin: 0,
@@ -84,7 +86,7 @@ const styles = {
   messagesContainer: {
     flex: 1,
     overflowY: 'auto',
-    backgroundColor: '#0a0a0a',
+    backgroundColor: 'rgba(8, 10, 16, 0.42)',
     padding: '16px 0',
   },
   emptyState: {
@@ -117,10 +119,11 @@ const styles = {
     fontSize: '12px',
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.4)',
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     padding: '2px 8px',
-    borderRadius: '4px',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    borderRadius: '999px',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    backdropFilter: 'blur(12px)',
   },
 };
 

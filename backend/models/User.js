@@ -33,6 +33,11 @@ const userSchema = new mongoose.Schema(
       minlength: [1, 'Last name must be at least 1 character'],
       maxlength: [50, 'Last name cannot exceed 50 characters'],
     },
+    profileImagePath: {
+      type: String,
+      default: null,
+      trim: true,
+    },
     createdAt: {
       type: Date,
       default: Date.now,

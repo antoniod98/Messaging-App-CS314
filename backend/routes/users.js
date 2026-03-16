@@ -1,12 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const { User } = require('../models');
-const { authenticate, generateToken } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
+const { generateToken } = require('../utils/auth');
+const {
+  deleteProfileImage,
+  saveProfileImageFromDataUrl,
+  serializeUser,
+} = require('../utils/profileImage');
 
 // PUT /api/users/profile - update user profile (protected route)
 router.put('/profile', authenticate, async (req, res) => {
   try {
-    const { firstName, lastName } = req.body;
+    const { firstName, lastName, profileImage, removeProfileImage } = req.body;
     const userId = req.user.userId;
 
     // validation: check required fields
@@ -47,6 +53,22 @@ router.put('/profile', authenticate, async (req, res) => {
 
     user.firstName = trimmedFirst;
     user.lastName = trimmedLast;
+
+    if (removeProfileImage) {
+      await deleteProfileImage(user.profileImagePath);
+      user.profileImagePath = null;
+    }
+
+    if (profileImage) {
+      const previousImagePath = user.profileImagePath;
+      const nextImagePath = await saveProfileImageFromDataUrl(profileImage);
+      user.profileImagePath = nextImagePath;
+
+      if (previousImagePath && previousImagePath !== nextImagePath) {
+        await deleteProfileImage(previousImagePath);
+      }
+    }
+
     await user.save();
 
     // generate new JWT token with updated user info
@@ -59,15 +81,17 @@ router.put('/profile', authenticate, async (req, res) => {
       success: true,
       message: 'Profile updated successfully',
       token: token,
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      },
+      user: serializeUser(req, user),
     });
   } catch (error) {
     console.error('Update profile error:', error);
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Server error while updating profile',

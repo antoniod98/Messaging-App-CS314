@@ -147,3 +147,6 @@ DEVELOPMENT_LOG.md
 # Test documentation (auto-generated)
 TESTING.md
 TEST-QUICK-REFERENCE.md
+
+# User-uploaded profile images
+backend/uploads/

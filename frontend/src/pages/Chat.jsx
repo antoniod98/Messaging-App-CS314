@@ -12,6 +12,7 @@ import CreateRoomModal from '../components/CreateRoomModal';
 import UserSearchModal from '../components/UserSearchModal';
 import TypingIndicator from '../components/TypingIndicator';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { getUserInitials } from '../utils/dateFormat';
 
 // API base URL from environment variables
 const API_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:8747';
@@ -33,6 +34,7 @@ const Chat = () => {
   const [typingUsers, setTypingUsers] = useState([]);
   const [isDMModalOpen, setIsDMModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isUpdatingRoomImage, setIsUpdatingRoomImage] = useState(false);
 
   // get current room details
   const activeRoom = rooms.find((room) => room.id === activeRoomId);
@@ -92,14 +94,14 @@ const Chat = () => {
   }, []);
 
   // create new chat room
-  const handleCreateRoom = async (roomName) => {
+  const handleCreateRoom = async (roomName, roomImage = null) => {
     try {
       setIsCreatingRoom(true);
       setError(null);
 
       const response = await axios.post(
         `${API_URL}/api/rooms`,
-        { name: roomName },
+        { name: roomName, roomImage },
         { headers: getAuthHeaders() }
       );
 
@@ -109,6 +111,7 @@ const Chat = () => {
 
         // automatically select new room
         setActiveRoomId(response.data.room.id);
+        await fetchRooms();
 
         return true; // success
       }
@@ -122,6 +125,36 @@ const Chat = () => {
       return false;
     } finally {
       setIsCreatingRoom(false);
+    }
+  };
+
+  const handleUpdateRoomImage = async ({ roomId, roomImage = null, removeRoomImage = false }) => {
+    try {
+      setIsUpdatingRoomImage(true);
+      setError(null);
+
+      const response = await axios.put(
+        `${API_URL}/api/rooms/${roomId}/image`,
+        { roomImage, removeRoomImage },
+        { headers: getAuthHeaders() }
+      );
+
+      if (response.data.success) {
+        setRooms((prevRooms) =>
+          prevRooms.map((room) => (room.id === roomId ? response.data.room : room))
+        );
+        await fetchRooms();
+        return { success: true };
+      }
+
+      return { success: false, message: 'Failed to update room image' };
+    } catch (error) {
+      console.error('Error updating room image:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to update room image';
+      setError(errorMessage);
+      return { success: false, message: errorMessage };
+    } finally {
+      setIsUpdatingRoomImage(false);
     }
   };
 
@@ -407,6 +440,19 @@ const Chat = () => {
         )}
       </div>
       <div style={styles.headerRight}>
+        <div style={styles.currentUser}>
+          {user?.profileImageUrl ? (
+            <img
+              src={user.profileImageUrl}
+              alt={`${user.firstName} ${user.lastName}`}
+              style={styles.currentUserAvatar}
+            />
+          ) : (
+            <div style={styles.currentUserAvatarFallback}>
+              {getUserInitials(user?.firstName, user?.lastName) || '?'}
+            </div>
+          )}
+        </div>
         <span style={styles.userName}>
           {user?.firstName} {user?.lastName}
         </span>
@@ -476,6 +522,8 @@ const Chat = () => {
       currentUserId={user?.id}
       onDeleteRoom={handleDeleteRoom}
       onInviteUser={() => setIsInviteModalOpen(true)}
+      onUpdateRoomImage={handleUpdateRoomImage}
+      isUpdatingRoomImage={isUpdatingRoomImage}
     />
   );
 
@@ -533,8 +581,8 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '12px 16px',
-    backgroundColor: '#1a1a1a',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'transparent',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
     height: '48px',
   },
   headerLeft: {
@@ -560,6 +608,30 @@ const styles = {
     alignItems: 'center',
     gap: '8px',
   },
+  currentUser: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  currentUserAvatar: {
+    width: '30px',
+    height: '30px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    display: 'block',
+  },
+  currentUserAvatarFallback: {
+    width: '30px',
+    height: '30px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#ffffff',
+    fontSize: '12px',
+    fontWeight: '700',
+    background: 'linear-gradient(135deg, #5865f2 0%, #3b82f6 100%)',
+  },
   userName: {
     fontSize: '13px',
     color: 'rgba(255, 255, 255, 0.9)',
@@ -570,22 +642,24 @@ const styles = {
     fontSize: '13px',
     fontWeight: '500',
     color: 'rgba(255, 255, 255, 0.9)',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    border: 'none',
-    borderRadius: '4px',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: '999px',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
+    backdropFilter: 'blur(12px)',
   },
   logoutButton: {
     padding: '6px 12px',
     fontSize: '13px',
     fontWeight: '500',
     color: '#ffffff',
-    backgroundColor: '#da373c',
-    border: 'none',
-    borderRadius: '4px',
+    background: 'linear-gradient(135deg, rgba(218, 55, 60, 0.9) 0%, rgba(170, 40, 55, 0.92) 100%)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: '999px',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
+    boxShadow: '0 10px 22px rgba(120, 20, 28, 0.22)',
   },
   noRoomSelected: {
     display: 'flex',

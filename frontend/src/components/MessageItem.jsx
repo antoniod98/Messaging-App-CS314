@@ -28,9 +28,17 @@ const MessageItem = ({ message, isOwnMessage }) => {
 
   return (
     <div style={styles.container}>
-      <div style={{...styles.avatar, backgroundColor: avatarBg}}>
-        <span style={styles.avatarText}>{initials}</span>
-      </div>
+      {message.sender.profileImageUrl ? (
+        <img
+          src={message.sender.profileImageUrl}
+          alt={senderName}
+          style={styles.avatarImage}
+        />
+      ) : (
+        <div style={{...styles.avatar, backgroundColor: avatarBg}}>
+          <span style={styles.avatarText}>{initials}</span>
+        </div>
+      )}
 
       <div style={styles.content}>
         <div style={styles.header}>
@@ -59,6 +67,15 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: '4px',
+  },
+  avatarImage: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    display: 'block',
     flexShrink: 0,
     marginTop: '4px',
   },

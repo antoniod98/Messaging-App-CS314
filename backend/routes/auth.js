@@ -3,6 +3,7 @@ const router = express.Router();
 const { User } = require('../models');
 const { hashPassword, comparePassword, generateToken } = require('../utils/auth');
 const { authenticate } = require('../middleware/auth');
+const { serializeUser } = require('../utils/profileImage');
 
 // POST /api/auth/register - register a new user account
 router.post('/register', async (req, res) => {
@@ -74,13 +75,7 @@ router.post('/register', async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      user: {
-        id: newUser._id,
-        email: newUser.email,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        fullName: newUser.fullName,
-      },
+      user: serializeUser(req, newUser),
       token, // also return token for client-side storage if needed
     });
   } catch (error) {
@@ -165,13 +160,7 @@ router.post('/login', async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Login successful',
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        fullName: user.fullName,
-      },
+      user: serializeUser(req, user),
       token,
     });
   } catch (error) {
@@ -220,15 +209,7 @@ router.get('/me', authenticate, async (req, res) => {
 
     res.status(200).json({
       success: true,
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        fullName: user.fullName,
-        createdAt: user.createdAt,
-        lastLogin: user.lastLogin,
-      },
+      user: serializeUser(req, user),
     });
   } catch (error) {
     console.error('Get user error:', error);

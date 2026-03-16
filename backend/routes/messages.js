@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Message, ChatRoom } = require('../models');
 const { authenticate } = require('../middleware/auth');
+const { getProfileImageUrl } = require('../utils/profileImage');
 
 // POST /api/messages - send a new message to a chat room (protected route)
 router.post('/', authenticate, async (req, res) => {
@@ -69,14 +70,20 @@ router.post('/', authenticate, async (req, res) => {
     await newMessage.save();
 
     // populate sender details before sending response
-    await newMessage.populate('sender', 'firstName lastName email');
+    await newMessage.populate('sender', 'firstName lastName email profileImagePath');
 
     res.status(201).json({
       success: true,
       message: {
         id: newMessage._id,
         content: newMessage.content,
-        sender: newMessage.sender,
+        sender: {
+          id: newMessage.sender._id,
+          firstName: newMessage.sender.firstName,
+          lastName: newMessage.sender.lastName,
+          email: newMessage.sender.email,
+          profileImageUrl: getProfileImageUrl(req, newMessage.sender.profileImagePath),
+        },
         chatRoom: newMessage.chatRoom,
         timestamp: newMessage.timestamp,
       },
@@ -156,7 +163,7 @@ router.get('/:roomId/messages', authenticate, async (req, res) => {
       .sort({ timestamp: -1 }) // get newest first from DB
       .skip(skip)
       .limit(limit)
-      .populate('sender', 'firstName lastName email')
+      .populate('sender', 'firstName lastName email profileImagePath')
       .lean(); // convert to plain JavaScript objects for better performance
 
     // reverse array to send oldest first (chronological order for chat display)
@@ -167,7 +174,13 @@ router.get('/:roomId/messages', authenticate, async (req, res) => {
       messages: messages.map((msg) => ({
         id: msg._id,
         content: msg.content,
-        sender: msg.sender,
+        sender: {
+          id: msg.sender._id,
+          firstName: msg.sender.firstName,
+          lastName: msg.sender.lastName,
+          email: msg.sender.email,
+          profileImageUrl: getProfileImageUrl(req, msg.sender.profileImagePath),
+        },
         chatRoom: msg.chatRoom,
         timestamp: msg.timestamp,
       })),
