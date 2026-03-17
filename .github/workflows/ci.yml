@@ -53,18 +53,6 @@ jobs:
         working-directory: ./backend
         run: npm test
 
-      - name: Run backend coverage
-        working-directory: ./backend
-        run: npm run test:coverage
-
-      - name: Upload backend coverage reports
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./backend/coverage/coverage-final.json
-          flags: backend
-          name: backend-coverage
-        continue-on-error: true
-
   frontend-tests:
     name: Frontend Tests
     runs-on: ubuntu-latest
@@ -96,18 +84,6 @@ jobs:
       - name: Run frontend tests
         working-directory: ./frontend
         run: npm test -- --run
-
-      - name: Run frontend coverage
-        working-directory: ./frontend
-        run: npm run test:coverage -- --run
-
-      - name: Upload frontend coverage reports
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./frontend/coverage/coverage-final.json
-          flags: frontend
-          name: frontend-coverage
-        continue-on-error: true
 
   build-frontend:
     name: Build Frontend
