@@ -48,6 +48,13 @@ Messaging-App-CS314/
 
 ## Installation
 
+### Clone Repository
+
+```bash
+git clone <repository-url>
+cd Messaging-App-CS314
+```
+
 ### Backend Setup
 
 ```bash
@@ -55,11 +62,32 @@ cd backend
 npm install
 ```
 
-The backend dependencies are already installed:
+Create `backend/.env` file:
+```env
+PORT=8747
+DATABASE_URI=mongodb://localhost:27017/messaging-app
+FRONTEND_URL=http://localhost:5173
+JWT_SECRET=your-secret-key-here  # REQUIRED: Generate a secure random string
+NODE_ENV=development
+```
+
+**Important**: Replace `your-secret-key-here` with a secure random string for JWT_SECRET. You can generate one using:
+```bash
+# Option 1: Using Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# Option 2: Using OpenSSL
+openssl rand -hex 32
+```
+
+Required dependencies (auto-installed):
 - express - Web framework
 - mongoose - MongoDB ODM
 - cors - Cross-origin resource sharing
 - dotenv - Environment variables
+- bcrypt - Password hashing
+- jsonwebtoken - JWT authentication
+- socket.io - Real-time communication
 
 ### Frontend Setup
 
@@ -68,27 +96,17 @@ cd frontend
 npm install
 ```
 
-The frontend dependencies are already installed:
+Create `frontend/.env` file:
+```env
+VITE_SERVER_URL=http://localhost:8747
+```
+
+Required dependencies (auto-installed):
 - React - UI library
 - Vite - Build tool
 - axios - HTTP client
 - react-router-dom - Routing
-
-## Configuration
-
-### Backend Environment Variables (backend/.env)
-
-```
-PORT=8747
-DATABASE_URI=mongodb://localhost:27017/messaging-app
-FRONTEND_URL=http://localhost:5173
-```
-
-### Frontend Environment Variables (frontend/.env)
-
-```
-VITE_SERVER_URL=http://localhost:8747
-```
+- socket.io-client - Real-time communication
 
 ## Running the Application
 
@@ -140,7 +158,20 @@ VITE v7.x.x ready in 157 ms
 
 - Check if port 8747 is already in use
 - Verify all dependencies are installed: `cd backend && npm install`
-- Check `.env` file exists and has correct values
+- Check `backend/.env` file exists with all required variables
+- Ensure MongoDB is running and accessible
+
+### bcrypt Installation Issues (Windows)
+
+If npm install fails with bcrypt errors:
+```bash
+npm install --build-from-source
+```
+
+Or install Visual Studio Build Tools:
+```bash
+npm install --global windows-build-tools
+```
 
 ### Frontend Not Connecting to Backend
 
@@ -148,13 +179,37 @@ VITE v7.x.x ready in 157 ms
 - Check `frontend/.env` has correct `VITE_SERVER_URL`
 - Verify CORS settings in `backend/index.js`
 
-## Next Steps
+### Missing .env Files
 
-- Add user authentication
-- Create message models and routes
-- Build messaging UI components
-- Implement real-time messaging with Socket.IO
-- Add user profiles and contacts
+Both `backend/.env` and `frontend/.env` must be created manually after cloning.
+`.env` files are not tracked in git for security reasons.
+
+## Testing
+
+### Backend Tests
+```bash
+cd backend
+npm test                # Run test suite (151 tests)
+npm run test:coverage   # Run with coverage report
+```
+
+### Frontend Tests
+```bash
+cd frontend
+npm test                # Run test suite (43 tests)
+npm run lint            # Run ESLint
+```
+
+## Features
+
+- User authentication (JWT)
+- Real-time messaging (Socket.IO)
+- Group chats and direct messages
+- User profiles with avatars
+- Room creation and management
+- Message history
+- Online status indicators
+- File uploads for profiles and rooms
 
 ## Resources
 

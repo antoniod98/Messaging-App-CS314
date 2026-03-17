@@ -1,4 +1,4 @@
-# CI/CD Setup Done ✅
+# CI/CD Setup Done
 
 ## Files Added
 
@@ -10,27 +10,27 @@
 ### Tests Run on Every Push
 
 **Backend:**
-- ✅ 151 Jest tests
-- ✅ Coverage checks (70%+ on most metrics)
-- ✅ Node 22.x (same as local)
-- ✅ Auto-creates test env vars
-- ✅ Uploads to Codecov (if you want)
+- 151 Jest tests
+- Coverage checks (70%+ on most metrics)
+- Node 22.x (same as local)
+- Auto-creates test env vars
+- Uploads to Codecov (if you want)
 
 **Frontend:**
-- ✅ 43 Vitest tests
-- ✅ ESLint checks
-- ✅ Coverage reports
-- ✅ Node 22.x
+- 43 Vitest tests
+- ESLint checks
+- Coverage reports
+- Node 22.x
 
 **Production Build:**
-- ✅ Vite build
-- ✅ Keeps artifacts for a week
-- ✅ Only if tests pass
+- Vite build
+- Keeps artifacts for a week
+- Only if tests pass
 
 **Integration:**
-- ✅ Spins up backend
-- ✅ Hits `/api/test` endpoint
-- ✅ Makes sure everything talks to each other
+- Spins up backend
+- Hits `/api/test` endpoint
+- Makes sure everything talks to each other
 
 ## How It Works
 
@@ -43,7 +43,7 @@ on:
     branches: [ main ]
 ```
 
-Every time you push to `main` or `antonio-branch`, or create a PR to `main`, the pipeline runs.
+Pipeline triggers on push to `main` or `antonio-branch`, and on PRs to `main`.
 
 ### Jobs Flow
 ```
@@ -57,162 +57,146 @@ All jobs run in parallel except:
 - `build-frontend` waits for `frontend-tests`
 - `integration-check` waits for both test suites
 
-## What Happens When You Push
+## Pipeline Execution Flow
 
-1. GitHub sees your push
-2. Spins up Ubuntu VM
-3. Grabs your code
+1. GitHub Actions detects push
+2. Provisions Ubuntu runner
+3. Checks out repository code
 4. Installs Node 22.x
-5. **Backend stuff:**
+5. **Backend:**
    - `cd backend && npm ci`
-   - Makes `.env.test` file
-   - Runs 151 tests
-   - Checks coverage
-6. **Frontend stuff:**
+   - Creates `.env.test` file
+   - Executes 151 tests
+   - Validates coverage thresholds
+6. **Frontend:**
    - `cd frontend && npm ci`
-   - Lints with ESLint
-   - Runs 43 tests
-   - Checks coverage
+   - Runs ESLint
+   - Executes 43 tests
+   - Validates coverage thresholds
 7. **Build:**
    - `npm run build`
-   - Saves the dist folder
+   - Artifacts stored for 7 days
 8. **Integration:**
-   - Starts backend
-   - Hits the API
-9. Shows you pass/fail on GitHub
+   - Starts backend server
+   - Health check on `/api/test` endpoint
+9. Results reported in Actions tab
 
-## Checking Results
+## Viewing Results
 
-### On GitHub:
-1. Repo → Actions tab
-2. See all runs
-3. Click one for logs
+### GitHub Actions Tab
+Navigate to repository → Actions tab → View workflow runs and logs
 
-### On PRs:
-- ✅ Green = passed
-- ❌ Red = failed
-- 🟡 Yellow = running
+### Pull Request Status Checks
+- Green checkmark: All checks passed
+- Red X: Failed checks
+- Yellow dot: In progress
 
-## Push It Up
+## Deployment
 
-### 1. Commit This Stuff
+### Commit Workflow Files
 ```bash
 git add .github/
-git commit -m "ci: add GitHub Actions workflow for automated testing
-
-- Auto-run 151 backend tests with Jest
-- Auto-run 43 frontend tests with Vitest
-- Run ESLint for code quality
-- Build and verify frontend production bundle
-- Integration health checks
-- Coverage reporting"
-
+git commit -m "ci: add GitHub Actions workflow for automated testing"
 git push origin antonio-branch
 ```
 
-### 2. Watch It
-After pushing:
+### Monitor Execution
 ```
 github.com/YOUR_USERNAME/Messaging-App-CS314/actions
 ```
 
-### 3. Badge (Optional)
-Top of your README.md:
+### CI Badge (Optional)
+Add to README.md:
 ```markdown
 ![CI](https://github.com/YOUR_USERNAME/Messaging-App-CS314/workflows/CI%2FCD%20Pipeline/badge.svg)
 ```
 
-### 4. Codecov (If You Want)
-1. codecov.io + login with GitHub
-2. Connect repo
-3. Add `CODECOV_TOKEN` to secrets
-4. Done
+### Codecov Integration (Optional)
+1. Sign in at codecov.io with GitHub
+2. Add repository
+3. Add `CODECOV_TOKEN` to repository secrets
+4. Coverage reports will upload automatically
 
-## Test Before Pushing
+## Local Validation
 
-Make sure it'll pass:
+Verify tests pass before pushing:
 
 ```bash
 # Backend
 cd backend
-npm ci                  # Clean install (what CI uses)
-npm test               # Run tests
-npm run test:coverage  # Check coverage
+npm ci                  # Clean dependency install
+npm test               # Execute test suite
+npm run test:coverage  # Validate coverage thresholds
 
 # Frontend
 cd frontend
-npm ci                 # Clean install
-npm run lint           # Check linting
-npm test -- --run      # Run tests
-npm run build          # Build production
+npm ci                 # Clean dependency install
+npm run lint           # ESLint validation
+npm test -- --run      # Execute test suite
+npm run build          # Production build
 ```
 
-If these all pass locally, CI will pass too!
+Local success indicates CI will pass.
 
-## Issues
+## Troubleshooting
 
-### "Works locally, fails in CI"
-- Check Node version (should be 22.x)
-- Try `npm ci` instead of `npm install`
-- Might be environment stuff
+### Local/CI Discrepancy
+- Verify Node 22.x is being used
+- Use `npm ci` for clean dependency install
+- Check environment-specific dependencies
 
-### "Coverage failing"
-Thresholds in jest.config.js:
+### Coverage Threshold Failures
+Configured thresholds in jest.config.js:
 - statements: 70%
 - branches: 69%
 - functions: 70%
 - lines: 70%
 
-You're at: 73.88% / 69.7% / 74.19% / 74.2% ✅ (all good)
+Current coverage: 73.88% / 69.7% / 74.19% / 74.2%
 
-### "Lint errors"
-Set to `continue-on-error` so it won't block CI.
-Still should fix them though.
+### Linting Failures
+ESLint configured with `continue-on-error: true` to prevent blocking.
+Failures will be reported but won't fail the build.
 
-## Not Included Yet
+## Optional Features
 
-Commented out for now:
+Currently disabled in workflow:
+- Automated deployment
+- Slack/Discord notifications
+- Performance benchmarking
+- Security scanning
 
-- ❌ Auto-deploy
-- ❌ Slack notifications
-- ❌ Performance tests
-- ❌ Security scans
+Uncomment in ci.yml to enable.
 
-Add later if you need them.
-
-## Where Everything Lives
+## File Structure
 
 ```
 Messaging-App-CS314/
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml          # The actual CI pipeline ⭐
-│       └── README.md       # How it works
+│       ├── ci.yml          # CI/CD pipeline configuration
+│       └── README.md       # Workflow documentation
 ├── backend/
 │   ├── package.json        # test, test:coverage scripts
-│   └── jest.config.js      # Coverage rules
+│   └── jest.config.js      # Coverage thresholds
 ├── frontend/
 │   ├── package.json        # test, lint, build scripts
-│   └── vite.config.js      # Build settings
-└── CI_SETUP.md            # This file
+│   └── vite.config.js      # Build configuration
+└── CI_SETUP.md            # Setup documentation
 ```
 
 ## Summary
 
-✅ GitHub Actions pipeline ready to go
-✅ Runs on push to main/antonio-branch and PRs
-✅ 194 total tests (151 backend + 43 frontend)
-✅ ESLint checks every frontend change
-✅ Verifies production builds work
-✅ Auto coverage reports
-✅ Node 22.x (same as local)
+GitHub Actions pipeline configuration:
+- Triggers: Push to main/antonio-branch, PRs to main
+- Test coverage: 194 total tests (151 backend, 43 frontend)
+- Code quality: ESLint validation on frontend
+- Build verification: Production build check
+- Coverage reporting: Automated threshold validation
+- Runtime: Node 22.x
 
-**Ready for your demo tomorrow!** 🚀
-
-Every push checks:
-- All tests pass ✅
-- Code looks good ✅
-- Production build works ✅
-- API responds ✅
-
-Push this to GitHub and watch it run!
+Pipeline validates:
+- Test suite execution
+- Code quality standards
+- Production build integrity
+- API health status

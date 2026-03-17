@@ -22,7 +22,7 @@ const RoomListItem = ({ room, isActive, onClick }) => {
       <div
         style={{
           ...styles.avatar,
-          ...(room.isDM
+          ...(room.isDM && !room.roomImageUrl
             ? {
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
@@ -30,7 +30,7 @@ const RoomListItem = ({ room, isActive, onClick }) => {
             : {}),
         }}
       >
-        {room.roomImageUrl && !room.isDM ? (
+        {room.roomImageUrl ? (
           <img src={room.roomImageUrl} alt={room.name} style={styles.avatarImage} />
         ) : (
           <span style={styles.avatarText}>{room.name.charAt(0).toUpperCase()}</span>

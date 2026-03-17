@@ -7,6 +7,7 @@ const {
   getRoomImageUrl,
   saveRoomImageFromDataUrl,
 } = require('../utils/roomImage');
+const { getProfileImageUrl } = require('../utils/profileImage');
 
 const dedupeParticipants = (participants) => {
   const seenParticipantIds = new Set();
@@ -25,6 +26,7 @@ const dedupeParticipants = (participants) => {
 const serializeRoom = (req, room, currentUserId = null) => {
   const uniqueParticipants = dedupeParticipants(room.participants);
   let displayName = room.name;
+  let dmProfileImageUrl = null;
 
   if (room.isDM && currentUserId) {
     const otherParticipant = uniqueParticipants.find(
@@ -33,6 +35,7 @@ const serializeRoom = (req, room, currentUserId = null) => {
 
     if (otherParticipant) {
       displayName = `${otherParticipant.firstName} ${otherParticipant.lastName}`;
+      dmProfileImageUrl = getProfileImageUrl(req, otherParticipant.profileImagePath);
     }
   }
 
@@ -40,7 +43,7 @@ const serializeRoom = (req, room, currentUserId = null) => {
     id: room._id,
     name: displayName,
     isDM: room.isDM || false,
-    roomImageUrl: room.isDM ? null : getRoomImageUrl(req, room.imagePath),
+    roomImageUrl: room.isDM ? dmProfileImageUrl : getRoomImageUrl(req, room.imagePath),
     creator: {
       id: room.creator._id || room.creator,
       firstName: room.creator.firstName,
@@ -52,6 +55,7 @@ const serializeRoom = (req, room, currentUserId = null) => {
       firstName: participant.firstName,
       lastName: participant.lastName,
       email: participant.email,
+      profileImageUrl: getProfileImageUrl(req, participant.profileImagePath),
     })),
     participantCount: uniqueParticipants.length,
     createdAt: room.createdAt,
@@ -96,7 +100,7 @@ router.post('/dm', authenticate, async (req, res) => {
 
     // populate participants if not already populated
     if (!dm.populated('participants')) {
-      dm = await dm.populate('participants', 'firstName lastName email profileImage');
+      dm = await dm.populate('participants', 'firstName lastName email profileImagePath');
     }
 
     console.log('DM participants:', dm.participants);
@@ -130,6 +134,7 @@ router.post('/dm', authenticate, async (req, res) => {
         id: dm._id,
         name: `${otherParticipant.firstName} ${otherParticipant.lastName}`,
         isDM: true,
+        roomImageUrl: getProfileImageUrl(req, otherParticipant.profileImagePath),
         creator: {
           id: dm.creator,
         },
@@ -138,6 +143,7 @@ router.post('/dm', authenticate, async (req, res) => {
           firstName: p.firstName,
           lastName: p.lastName,
           email: p.email,
+          profileImageUrl: getProfileImageUrl(req, p.profileImagePath),
         })),
         participantCount: uniqueParticipants.length,
         createdAt: dm.createdAt,
@@ -215,7 +221,7 @@ router.post('/', authenticate, async (req, res) => {
 
     // populate creator details before sending response
     await newRoom.populate('creator', 'firstName lastName email');
-    await newRoom.populate('participants', 'firstName lastName email');
+    await newRoom.populate('participants', 'firstName lastName email profileImagePath');
 
     res.status(201).json({
       success: true,
@@ -253,7 +259,7 @@ router.get('/', authenticate, async (req, res) => {
     // find all rooms where user is a participant
     const rooms = await ChatRoom.find({ participants: userId })
       .populate('creator', 'firstName lastName email')
-      .populate('participants', 'firstName lastName email')
+      .populate('participants', 'firstName lastName email profileImagePath')
       .sort({ createdAt: -1 }); // most recent first
 
     res.status(200).json({
@@ -277,7 +283,7 @@ router.get('/:id', authenticate, async (req, res) => {
 
     const room = await ChatRoom.findById(id)
       .populate('creator', 'firstName lastName email')
-      .populate('participants', 'firstName lastName email');
+      .populate('participants', 'firstName lastName email profileImagePath');
 
     if (!room) {
       return res.status(404).json({
@@ -458,7 +464,7 @@ router.put('/:id/image', authenticate, async (req, res) => {
 
     const room = await ChatRoom.findById(id)
       .populate('creator', 'firstName lastName email')
-      .populate('participants', 'firstName lastName email');
+      .populate('participants', 'firstName lastName email profileImagePath');
 
     if (!room) {
       return res.status(404).json({

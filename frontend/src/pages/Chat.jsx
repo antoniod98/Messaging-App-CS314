@@ -31,6 +31,7 @@ const Chat = () => {
   const [, setIsLoadingRooms] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
   const [isDMModalOpen, setIsDMModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -109,9 +110,14 @@ const Chat = () => {
         // add new room to list
         setRooms((prevRooms) => [response.data.room, ...prevRooms]);
 
-        // automatically select new room
-        setActiveRoomId(response.data.room.id);
         await fetchRooms();
+
+        // automatically select and join new room
+        handleRoomSelect(response.data.room.id);
+
+        // show success notification
+        setSuccess(`Room "${response.data.room.name}" created successfully!`);
+        setTimeout(() => setSuccess(null), 3000);
 
         return true; // success
       }
@@ -570,6 +576,16 @@ const Chat = () => {
           </button>
         </div>
       )}
+
+      {/* success notification (temporary display) */}
+      {success && (
+        <div style={styles.successNotification}>
+          {success}
+          <button style={styles.successClose} onClick={() => setSuccess(null)}>
+            ×
+          </button>
+        </div>
+      )}
     </>
   );
 };
@@ -700,6 +716,34 @@ const styles = {
     animation: 'slideUp 0.3s ease-out',
   },
   errorClose: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    border: 'none',
+    color: '#ffffff',
+    fontSize: '18px',
+    cursor: 'pointer',
+    padding: '2px 8px',
+    marginLeft: 'auto',
+    borderRadius: '4px',
+    transition: 'background-color 0.2s',
+    fontWeight: '600',
+  },
+  successNotification: {
+    position: 'fixed',
+    bottom: '24px',
+    right: '24px',
+    backgroundColor: '#43b581',
+    color: '#ffffff',
+    padding: '16px 20px',
+    borderRadius: '6px',
+    boxShadow: '0 8px 16px rgba(0, 0, 0, 0.4)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    zIndex: 3000,
+    maxWidth: '400px',
+    animation: 'slideUp 0.3s ease-out',
+  },
+  successClose: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     border: 'none',
     color: '#ffffff',

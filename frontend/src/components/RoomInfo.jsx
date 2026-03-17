@@ -3,6 +3,22 @@ import { useSocket } from '../context/SocketContext';
 
 const MAX_ROOM_IMAGE_BYTES = 2 * 1024 * 1024;
 
+// Generate avatar background color based on user name
+const getAvatarColor = (firstName, lastName) => {
+  const colors = [
+    '#5865f2', // Discord blurple
+    '#eb459e', // Pink
+    '#ed4245', // Red
+    '#f26522', // Orange
+    '#f2c94c', // Yellow
+    '#57f287', // Green
+    '#00aff4', // Cyan
+    '#9b84ee', // Purple
+  ];
+  const index = (firstName.charCodeAt(0) + lastName.charCodeAt(0)) % colors.length;
+  return colors[index];
+};
+
 // right sidebar showing room details and participants
 const RoomInfo = ({
   room,
@@ -171,13 +187,22 @@ const RoomInfo = ({
             const initials = getUserInitials(participant.firstName, participant.lastName);
             const isCurrentUser = participant.id === currentUserId;
             const isOnline = onlineUsers.includes(participant.id);
+            const avatarBg = getAvatarColor(participant.firstName, participant.lastName);
 
             return (
               <div key={participant.id} style={styles.participantItem}>
                 <div style={{ position: 'relative' }}>
-                  <div style={styles.participantAvatar}>
-                    <span style={styles.participantAvatarText}>{initials}</span>
-                  </div>
+                  {participant.profileImageUrl ? (
+                    <img
+                      src={participant.profileImageUrl}
+                      alt={`${participant.firstName} ${participant.lastName}`}
+                      style={styles.participantAvatarImage}
+                    />
+                  ) : (
+                    <div style={{...styles.participantAvatar, backgroundColor: avatarBg}}>
+                      <span style={styles.participantAvatarText}>{initials}</span>
+                    </div>
+                  )}
                   {/* online status indicator */}
                   {isOnline && (
                     <div style={styles.onlineIndicator} title="Online"></div>
@@ -363,10 +388,17 @@ const styles = {
     width: '32px',
     height: '32px',
     borderRadius: '50%',
-    backgroundColor: '#5865f2',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
+  },
+  participantAvatarImage: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    display: 'block',
     flexShrink: 0,
   },
   participantAvatarText: {
