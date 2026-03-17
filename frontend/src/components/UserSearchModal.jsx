@@ -58,6 +58,7 @@ const UserSearchModal = ({ isOpen, onClose, onSelectUser, mode = 'dm', currentRo
     }, 300);
 
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
   const handleSelectUser = (user) => {

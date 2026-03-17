@@ -22,7 +22,9 @@ export const SocketProvider = ({ children }) => {
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSocket(null);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsConnected(false);
       }
       return;
@@ -152,6 +154,7 @@ export const SocketProvider = ({ children }) => {
 
 // custom hook to access socket context
 // usage: const { socket, isConnected, isConnecting } = useSocket();
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSocket = () => {
   const context = useContext(SocketContext);
   if (!context) {

@@ -138,6 +138,7 @@ export const AuthProvider = ({ children }) => {
 
 // custom hook to use auth context
 // usage: const { user, login, logout, isAuthenticated } = useAuth();
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

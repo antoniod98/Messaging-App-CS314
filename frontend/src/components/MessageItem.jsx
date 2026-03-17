@@ -20,7 +20,7 @@ const getAvatarColor = (firstName, lastName) => {
   return colors[index];
 };
 
-const MessageItem = ({ message, isOwnMessage }) => {
+const MessageItem = ({ message }) => {
   const senderName = `${message.sender.firstName} ${message.sender.lastName}`;
   const initials = getUserInitials(message.sender.firstName, message.sender.lastName);
   const fullTimestamp = formatFullTimestamp(message.timestamp);
