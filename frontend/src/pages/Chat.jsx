@@ -28,7 +28,7 @@ const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
-  const [isLoadingRooms, setIsLoadingRooms] = useState(true);
+  const [, setIsLoadingRooms] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [error, setError] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
