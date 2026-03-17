@@ -96,14 +96,32 @@ router.post('/dm', authenticate, async (req, res) => {
 
     // populate participants if not already populated
     if (!dm.populated('participants')) {
-      dm = await dm.populate('participants', 'firstName lastName email');
+      dm = await dm.populate('participants', 'firstName lastName email profileImage');
     }
+
+    console.log('DM participants:', dm.participants);
 
     // get the other participant (not the current user)
     const uniqueParticipants = dedupeParticipants(dm.participants);
+    console.log('Unique participants:', uniqueParticipants.length);
+    console.log('Current user ID:', currentUserId.toString());
+
     const otherParticipant = uniqueParticipants.find(
-      (p) => p._id.toString() !== currentUserId.toString()
+      (p) => {
+        const pId = p._id ? p._id.toString() : p.toString();
+        console.log('Checking participant:', pId, 'vs', currentUserId.toString());
+        return pId !== currentUserId.toString();
+      }
     );
+
+    console.log('Other participant found:', otherParticipant);
+
+    if (!otherParticipant) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to find other participant in DM',
+      });
+    }
 
     res.status(200).json({
       success: true,

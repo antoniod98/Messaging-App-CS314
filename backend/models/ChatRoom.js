@@ -43,7 +43,6 @@ const chatRoomSchema = new mongoose.Schema(
 );
 
 // indexes to speed up common queries
-chatRoomSchema.index({ name: 1 });
 chatRoomSchema.index({ creator: 1 });
 chatRoomSchema.index({ participants: 1 });
 chatRoomSchema.index({ isDM: 1, participants: 1 });
